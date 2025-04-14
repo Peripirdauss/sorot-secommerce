@@ -1,0 +1,584 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TikTok Analytics Dashboard</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+  <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
+  <style>
+    :root {
+      --primary-color: #e6336f;
+      --secondary-color: #25f4ee;
+      --bg-light: #f8f9fa;
+      --card-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
+    body {
+      background-color: var(--bg-light);
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    }
+    .navbar-brand {
+      font-weight: 600;
+      color: var(--primary-color);
+    }
+    .btn-primary {
+      background-color: var(--primary-color);
+      border-color: var(--primary-color);
+    }
+    .btn-primary:hover {
+      background-color: #d62b63;
+      border-color: #d62b63;
+    }
+    .btn-outline-primary {
+      color: var(--primary-color);
+      border-color: var(--primary-color);
+    }
+    .btn-outline-primary:hover {
+      background-color: var(--primary-color);
+      color: white;
+    }
+    .card {
+      border-radius: 12px;
+      box-shadow: var(--card-shadow);
+      border: none;
+      transition: transform 0.2s;
+    }
+    .card:hover {
+      transform: translateY(-5px);
+    }
+    .metrics-card {
+      height: 100%;
+      min-height: 160px;
+    }
+    .metrics-value {
+      font-size: 2.5rem;
+      font-weight: 700;
+    }
+    .metrics-label {
+      color: #6c757d;
+      font-size: 0.9rem;
+    }
+    .tab-button {
+      border-radius: 8px;
+      padding: 8px 16px;
+      background-color: #f1f1f1;
+      border: none;
+      margin-right: 8px;
+    }
+    .tab-button.active {
+      background-color: white;
+      box-shadow: var(--card-shadow);
+    }
+    .modal-xl {
+      max-width: 95%;
+    }
+    #resultsTable th {
+      position: sticky;
+      top: 0;
+      background-color: white;
+      z-index: 10;
+    }
+    .status-ready {
+      color: #198754;
+    }
+    .header-icon {
+      font-size: 1.2rem;
+      color: #6c757d;
+      cursor: pointer;
+    }
+    @media (max-width: 768px) {
+      .metrics-value {
+        font-size: 1.8rem;
+      }
+      .navbar-brand {
+        font-size: 1.2rem;
+      }
+    }
+  </style>
+</head>
+<body>
+  <!-- Navbar -->
+  <nav class="navbar navbar-expand-lg navbar-light bg-white shadow-sm sticky-top">
+    <div class="container">
+      <a class="navbar-brand" href="#">
+        <i class="bi bi-tiktok me-2"></i>TikTok Analytics Dashboard
+      </a>
+      <div class="ms-auto">
+        <button class="btn btn-link text-dark me-2" id="docsButton">Documentation</button>
+        <button class="btn btn-primary" id="exportButton">
+          <i class="bi bi-download me-1"></i>Export Data
+        </button>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Main Content -->
+  <div class="container py-4">
+    <div class="row mb-4">
+      <div class="col">
+        <h2 class="mb-1">Dashboard</h2>
+        <p class="text-muted">Analyze TikTok video metrics and performance data</p>
+      </div>
+    </div>
+
+    <!-- Metrics Cards -->
+    <div class="row mb-4 g-3">
+      <div class="col-md-4">
+        <div class="card metrics-card">
+          <div class="card-body d-flex flex-column">
+            <div class="d-flex justify-content-between mb-3">
+              <span class="metrics-label">Total Videos</span>
+              <i class="bi bi-clipboard-data header-icon"></i>
+            </div>
+            <div class="metrics-value" id="totalVideos">0</div>
+            <div class="metrics-label">Videos analyzed in current session</div>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-4">
+        <div class="card metrics-card">
+          <div class="card-body d-flex flex-column">
+            <div class="d-flex justify-content-between mb-3">
+              <span class="metrics-label">Average Views</span>
+              <i class="bi bi-eye header-icon"></i>
+            </div>
+            <div class="metrics-value" id="averageViews">0</div>
+            <div class="metrics-label">Average views per video</div>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-4">
+        <div class="card metrics-card">
+          <div class="card-body d-flex flex-column">
+            <div class="d-flex justify-content-between mb-3">
+              <span class="metrics-label">Status</span>
+              <i class="bi bi-info-circle header-icon"></i>
+            </div>
+            <div class="metrics-value status-ready" id="statusText">Ready</div>
+            <div class="metrics-label">Enter URLs to analyze</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Input Section -->
+    <div class="row mb-4">
+      <div class="col-lg-5 mb-3 mb-lg-0">
+        <div class="card h-100">
+          <div class="card-body">
+            <h5 class="card-title mb-3">Input TikTok URLs</h5>
+            <p class="text-muted mb-3">Enter one URL per line to analyze multiple videos</p>
+            <textarea id="urlInput" rows="8" class="form-control mb-3" placeholder="https://www.tiktok.com/@username/video/1234567890123456789"></textarea>
+            <button class="btn btn-primary w-100" id="analyzeButton">
+              Analyze Videos
+            </button>
+          </div>
+        </div>
+      </div>
+      <div class="col-lg-7">
+        <div class="card h-100">
+          <div class="card-body">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+              <h5 class="card-title mb-0">Results Overview</h5>
+              <div>
+                <button class="tab-button active" id="tableViewBtn">Table View</button>
+                <button class="tab-button" id="cardViewBtn">Card View</button>
+              </div>
+            </div>
+            <p class="text-muted">Summary of analyzed TikTok videos</p>
+
+            <!-- Progress Bar -->
+            <div class="progress mb-3" style="height: 8px; display: none;" id="progressContainer">
+              <div id="scrapeProgress" class="progress-bar bg-primary" role="progressbar" style="width: 0%"></div>
+            </div>
+
+            <!-- Results Placeholder -->
+            <div id="resultsPlaceholder" class="text-center py-5">
+              <i class="bi bi-search" style="font-size: 3rem; color: #dee2e6;"></i>
+              <p class="mt-3 text-muted">No results yet. Enter TikTok URLs to analyze.</p>
+            </div>
+
+            <!-- Results Preview (Limited) -->
+            <div id="resultsPreview" class="table-responsive" style="display: none; max-height: 350px; overflow-y: auto;">
+              <table class="table table-hover">
+                <thead>
+                  <tr>
+                    <th>Video ID</th>
+                    <th>Views</th>
+                    <th>Likes</th>
+                    <th>Comments</th>
+                    <th>Shares</th>
+                    <th>Action</th>
+                  </tr>
+                </thead>
+                <tbody id="resultsPreviewBody"></tbody>
+              </table>
+            </div>
+
+            <!-- Card View (Limited) -->
+            <div id="cardViewContainer" class="row g-3" style="display: none;">
+              <!-- Cards will be inserted here -->
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Loading Spinner -->
+  <div class="modal fade" id="loadingModal" tabindex="-1" data-bs-backdrop="static">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-body text-center py-5">
+          <div class="spinner-border text-primary mb-3" style="width: 3rem; height: 3rem;"></div>
+          <h5 class="mt-3">Analyzing TikTok Videos</h5>
+          <p class="text-muted">This may take a few moments...</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Full Results Modal -->
+  <div class="modal fade" id="resultsModal" tabindex="-1">
+    <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">Complete Analysis Results</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <div class="table-responsive">
+            <table class="table table-hover">
+              <thead>
+                <tr>
+                  <th>Video ID</th>
+                  <th>Created Time</th>
+                  <th>Duration</th>
+                  <th>Copyrighted</th>
+                  <th>Music ID</th>
+                  <th>Sound</th>
+                  <th>Likes</th>
+                  <th>Shares</th>
+                  <th>Comments</th>
+                  <th>Views</th>
+                  <th>Saves</th>
+                  <th>Repost</th>
+                  <th>Followers</th>
+                  <th>Following</th>
+                  <th>Like Account</th>
+                  <th>Video Count</th>
+                  <th>Friends</th>
+                  <th>Is AD</th>
+                  <th>Title</th>
+                  <th>Description</th>
+                </tr>
+              </thead>
+              <tbody id="resultsTable"></tbody>
+            </table>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+          <button type="button" class="btn btn-primary" id="downloadBtn">
+            <i class="bi bi-download me-1"></i>Download XLSX
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+  <script>
+    let paginatedData = [];
+    const loadingModal = new bootstrap.Modal(document.getElementById('loadingModal'));
+    const resultsModal = new bootstrap.Modal(document.getElementById('resultsModal'));
+
+    // View toggle
+    document.getElementById('tableViewBtn').addEventListener('click', function() {
+      this.classList.add('active');
+      document.getElementById('cardViewBtn').classList.remove('active');
+      document.getElementById('resultsPreview').style.display = paginatedData.length ? 'block' : 'none';
+      document.getElementById('cardViewContainer').style.display = 'none';
+    });
+
+    document.getElementById('cardViewBtn').addEventListener('click', function() {
+      this.classList.add('active');
+      document.getElementById('tableViewBtn').classList.remove('active');
+      document.getElementById('resultsPreview').style.display = 'none';
+      document.getElementById('cardViewContainer').style.display = paginatedData.length ? 'flex' : 'none';
+    });
+
+    document.getElementById('exportButton').addEventListener('click', function() {
+      if (paginatedData.length === 0) {
+        alert('No data to export. Please analyze videos first.');
+        return;
+      }
+      downloadXLSX();
+    });
+
+    document.getElementById('downloadBtn').addEventListener('click', function() {
+      downloadXLSX();
+    });
+
+    document.getElementById('analyzeButton').addEventListener('click', function() {
+      scrapeData();
+    });
+
+    async function scrapeData() {
+      const input = document.getElementById('urlInput').value.trim();
+      const urls = [...new Set(input.split('\n').map(u => u.trim()).filter(Boolean))];
+      
+      if (urls.length === 0) {
+        alert("Enter at least one valid TikTok URL");
+        return;
+      }
+      
+      // Update UI
+      document.getElementById('statusText').textContent = 'Processing';
+      document.getElementById('statusText').classList.remove('status-ready');
+      document.getElementById('progressContainer').style.display = 'block';
+      document.getElementById('scrapeProgress').style.width = '0%';
+      document.getElementById('scrapeProgress').textContent = '';
+      loadingModal.show();
+      
+      const results = [];
+      for (let i = 0; i < urls.length; i++) {
+        try {
+          const res = await fetch("/api", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ urls: [urls[i]] })
+          });
+          
+          if (!res.ok) {
+            throw new Error(`API returned ${res.status}: ${await res.text()}`);
+          }
+          
+          const data = await res.json();
+          results.push(data[0]);
+        } catch (e) {
+          console.error('Error scraping:', e);
+          results.push({ url: urls[i], error: e.message || "Failed to scrape" });
+        }
+        
+        // Update progress
+        const percent = Math.round(((i + 1) / urls.length) * 100);
+        document.getElementById('scrapeProgress').style.width = `${percent}%`;
+      }
+      
+      // Hide loading modal
+      loadingModal.hide();
+      
+      // Update metrics
+      updateMetrics(results);
+      
+      // Store and render results
+      paginatedData = results;
+      renderResults(results);
+      
+      // Show modal with complete results
+      resultsModal.show();
+      
+      // Update localStorage for history
+      localStorage.setItem("tiktokScraperHistory", JSON.stringify(results));
+      
+      // Update status
+      document.getElementById('statusText').textContent = 'Completed';
+      document.getElementById('statusText').classList.add('status-ready');
+    }
+    
+    function updateMetrics(results) {
+      const validResults = results.filter(r => !r.error);
+      
+      // Update total videos
+      document.getElementById('totalVideos').textContent = validResults.length;
+      
+      // Calculate average views
+      if (validResults.length > 0) {
+        const totalViews = validResults.reduce((sum, item) => {
+          const views = parseInt(item.views || 0);
+          return sum + (isNaN(views) ? 0 : views);
+        }, 0);
+        
+        const avgViews = Math.round(totalViews / validResults.length);
+        document.getElementById('averageViews').textContent = formatNumber(avgViews);
+      }
+    }
+    
+    function formatNumber(num) {
+      if (num >= 1000000) {
+        return (num / 1000000).toFixed(1) + 'M';
+      } else if (num >= 1000) {
+        return (num / 1000).toFixed(1) + 'K';
+      }
+      return num.toString();
+    }
+    
+    function renderResults(data) {
+      // Hide placeholder if we have data
+      if (data.length > 0) {
+        document.getElementById('resultsPlaceholder').style.display = 'none';
+        document.getElementById('resultsPreview').style.display = document.getElementById('tableViewBtn').classList.contains('active') ? 'block' : 'none';
+        document.getElementById('cardViewContainer').style.display = document.getElementById('cardViewBtn').classList.contains('active') ? 'flex' : 'none';
+      } else {
+        document.getElementById('resultsPlaceholder').style.display = 'block';
+        document.getElementById('resultsPreview').style.display = 'none';
+        document.getElementById('cardViewContainer').style.display = 'none';
+        return;
+      }
+      
+      // Render table preview (limited columns)
+      const previewBody = document.getElementById('resultsPreviewBody');
+      previewBody.innerHTML = '';
+      
+      // Render card view
+      const cardContainer = document.getElementById('cardViewContainer');
+      cardContainer.innerHTML = '';
+      
+      // Render full results table
+      const resultsTable = document.getElementById('resultsTable');
+      resultsTable.innerHTML = '';
+      
+      data.forEach((item, index) => {
+        if (item.error) {
+          // Preview row
+          const previewRow = document.createElement('tr');
+          previewRow.innerHTML = `
+            <td colspan="5" class="text-danger">Error: ${item.error}</td>
+            <td><button class="btn btn-sm btn-outline-danger">Failed</button></td>
+          `;
+          previewBody.appendChild(previewRow);
+          
+          // Full results row
+          const fullRow = document.createElement('tr');
+          fullRow.innerHTML = `<td colspan="20" class="text-danger">Error: ${item.error}</td>`;
+          resultsTable.appendChild(fullRow);
+          
+          // Card
+          const errorCard = document.createElement('div');
+          errorCard.className = 'col-md-6 col-lg-4';
+          errorCard.innerHTML = `
+            <div class="card border-danger">
+              <div class="card-body">
+                <h6 class="card-subtitle mb-2 text-danger">Error Processing URL</h6>
+                <p class="card-text small">${item.error}</p>
+              </div>
+            </div>
+          `;
+          cardContainer.appendChild(errorCard);
+        } else {
+          // Preview row
+          const previewRow = document.createElement('tr');
+          previewRow.innerHTML = `
+            <td>${item.videoId || '-'}</td>
+            <td>${formatNumber(item.views) || '-'}</td>
+            <td>${formatNumber(item.like) || '-'}</td>
+            <td>${formatNumber(item.comments) || '-'}</td>
+            <td>${formatNumber(item.share) || '-'}</td>
+            <td><button class="btn btn-sm btn-outline-primary" onclick="showDetails(${index})">Details</button></td>
+          `;
+          previewBody.appendChild(previewRow);
+          
+          // Full results row
+          const fullRow = document.createElement('tr');
+          const keys = [
+            "videoId", "createdTime", "duration", "isCopyrighted", "musicId", "sound",
+            "like", "share", "comments", "views", "saves", "repost", "followers",
+            "following", "like-account", "video-count", "friends", "isAD", "title", "description"
+          ];
+          
+          fullRow.innerHTML = keys.map(key => `<td>${item[key] || '-'}</td>`).join('');
+          resultsTable.appendChild(fullRow);
+          
+          // Card
+          const card = document.createElement('div');
+          card.className = 'col-md-6 col-lg-4';
+          card.innerHTML = `
+            <div class="card h-100">
+              <div class="card-body">
+                <h6 class="card-title">Video ${item.videoId || 'Unknown'}</h6>
+                <div class="d-flex justify-content-between mb-2">
+                  <div class="text-muted small">Views</div>
+                  <div class="fw-bold">${formatNumber(item.views) || '-'}</div>
+                </div>
+                <div class="d-flex justify-content-between mb-2">
+                  <div class="text-muted small">Likes</div>
+                  <div class="fw-bold">${formatNumber(item.like) || '-'}</div>
+                </div>
+                <div class="d-flex justify-content-between mb-2">
+                  <div class="text-muted small">Comments</div>
+                  <div class="fw-bold">${formatNumber(item.comments) || '-'}</div>
+                </div>
+                <div class="d-flex justify-content-between mb-2">
+                  <div class="text-muted small">Shares</div>
+                  <div class="fw-bold">${formatNumber(item.share) || '-'}</div>
+                </div>
+                <button class="btn btn-sm btn-outline-primary mt-2 w-100" onclick="showDetails(${index})">View Details</button>
+              </div>
+            </div>
+          `;
+          cardContainer.appendChild(card);
+        }
+      });
+    }
+    
+    function showDetails(index) {
+      // Scroll to the row in the results table
+      resultsModal.show();
+      
+      // Highlight the row
+      const rows = document.querySelectorAll('#resultsTable tr');
+      if (rows[index]) {
+        rows[index].classList.add('table-primary');
+        setTimeout(() => {
+          rows[index].scrollIntoView({ behavior: 'smooth', block: 'center' });
+          setTimeout(() => rows[index].classList.remove('table-primary'), 2000);
+        }, 300);
+      }
+    }
+    
+    function downloadXLSX() {
+      if (paginatedData.length === 0) return;
+      
+      const headers = [
+        "Video ID", "Created Time", "Duration", "Copyrighted", "Music ID", "Sound",
+        "Likes", "Shares", "Comments", "Views", "Saves", "Repost", "Followers",
+        "Following", "Like Account", "Video Count", "Friends", "Is AD", "Title", "Description"
+      ];
+      
+      const mappedKeys = [
+        "videoId", "createdTime", "duration", "isCopyrighted", "musicId", "sound",
+        "like", "share", "comments", "views", "saves", "repost", "followers",
+        "following", "like-account", "video-count", "friends", "isAD", "title", "description"
+      ];
+      
+      const data = paginatedData.map(obj => 
+        mappedKeys.map(key => obj[key] || "")
+      );
+      
+      const ws = XLSX.utils.aoa_to_sheet([headers, ...data]);
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, "TikTok Data");
+      XLSX.writeFile(wb, "tiktok_analysis.xlsx");
+    }
+    
+    // Load saved data if available
+    window.onload = function () {
+      const saved = localStorage.getItem("tiktokScraperHistory");
+      if (saved) {
+        try {
+          paginatedData = JSON.parse(saved);
+          updateMetrics(paginatedData);
+          renderResults(paginatedData);
+        } catch (e) {
+          console.error("Error loading saved data", e);
+        }
+      }
+    };
+    
+    // Expose function to global scope for onClick handlers
+    window.showDetails = showDetails;
+  </script>
+</body>
+</html>
