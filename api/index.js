@@ -7,6 +7,26 @@ if (process.env.NODE_ENV !== "production") {
 }
 
 const pool = require("./pool");
+const limiter = require("./limiter");
+
+// Helper to determine client fingerprint
+function getClientFingerprint(req) {
+  const headerFp = req.headers['x-sorot-fingerprint'];
+  if (headerFp && headerFp.trim()) return headerFp.trim();
+
+  const forwarded = req.headers['x-forwarded-for'];
+  if (forwarded) {
+    const firstIp = forwarded.split(',')[0].trim();
+    if (firstIp) return firstIp;
+  }
+
+  const socketIp = req.socket?.remoteAddress;
+  if (socketIp && socketIp !== '::1' && socketIp !== '127.0.0.1') {
+    return socketIp;
+  }
+
+  return 'local_browser_client';
+}
 
 // Log environment info for debugging
 console.log('Environment:', process.env.NODE_ENV);
@@ -414,7 +434,33 @@ module.exports = async (req, res) => {
       return res.status(200).json(testResult);
     }
 
+    // 6. View Quotas list
+    if (parsed.pathname === '/api/admin/quotas' && req.method === 'GET') {
+      return res.status(200).json({ ok: true, quotas: limiter.getAllStats() });
+    }
+
+    // 7. Reset Quotas
+    if (parsed.pathname === '/api/admin/quotas/reset' && req.method === 'POST') {
+      const targetFp = body?.fingerprint;
+      if (targetFp) {
+        limiter.reset(targetFp);
+        return res.status(200).json({ ok: true, message: `Quota untuk ${targetFp} direset`, quotas: limiter.getAllStats() });
+      } else {
+        limiter.resetAll();
+        return res.status(200).json({ ok: true, message: 'Semua quota berhasil direset ke 0', quotas: limiter.getAllStats() });
+      }
+    }
+
     return res.status(404).json({ error: 'Admin route not found' });
+  }
+
+  // Quota status inspection endpoint (/api/quota)
+  if (req.method === 'GET' && (parsed.pathname === '/api/quota' || parsed.searchParams.has('quota'))) {
+    const fp = getClientFingerprint(req);
+    return res.status(200).json({
+      ok: true,
+      ...limiter.getUsage(fp)
+    });
   }
 
   // Diagnostic, Health & Pool Inspection endpoint
@@ -460,9 +506,25 @@ module.exports = async (req, res) => {
       }
     }
 
+    const fp = getClientFingerprint(req);
+    const quotaUsage = limiter.getUsage(fp);
+
+    res.setHeader('X-Sorot-Quota-Used', quotaUsage.used);
+    res.setHeader('X-Sorot-Quota-Remaining', quotaUsage.remaining);
+    res.setHeader('X-Sorot-Quota-Max', quotaUsage.max);
+
     // Handle profile extraction mode
     if (body?.username) {
-      console.log('Profile extraction requested for:', body.username);
+      if (quotaUsage.isExceeded) {
+        return res.status(429).json({
+          error: "QUOTA_EXCEEDED",
+          title: "You're an Amazing Runner, Slow Down or Contact Us",
+          message: "You have completed your 50-video analysis limit in this session. Your creative pace is remarkable! To protect server resources and maintain zero-latency intelligence, please pause or contact our team for enterprise unlimited access.",
+          quota: quotaUsage
+        });
+      }
+
+      console.log(`Profile extraction requested for: ${body.username} [User: ${fp}]`);
       const profileResult = await getTikTokUserVideos(body.username);
       return res.status(200).json(profileResult);
     }
@@ -474,11 +536,31 @@ module.exports = async (req, res) => {
     }
 
     const cleanedUrls = urls.map(normalizeTikTokUrl).filter(u => u.length > 0);
-    console.log(`Processing ${cleanedUrls.length} URL(s) across Browserless pool:`, cleanedUrls);
+    const quotaCheck = limiter.checkCanConsume(fp, cleanedUrls.length);
+
+    if (!quotaCheck.allowed) {
+      const isCapped = quotaUsage.used >= quotaUsage.max;
+      return res.status(429).json({
+        error: "QUOTA_EXCEEDED",
+        title: "You're an Amazing Runner, Slow Down or Contact Us",
+        message: isCapped
+          ? "You have analyzed 50 out of 50 links in this session! Your momentum is extraordinary. Please slow down and let these insights settle, or contact our team to unlock unlimited enterprise pipelines."
+          : `You have ${quotaCheck.remaining} link slot(s) remaining in your session quota of 50, but submitted a batch of ${cleanedUrls.length} links. Please submit ${quotaCheck.remaining} or fewer links, or contact our team to unlock unlimited runs.`,
+        quota: quotaUsage
+      });
+    }
+
+    console.log(`Processing ${cleanedUrls.length} URL(s) across Browserless pool for [${fp}]:`, cleanedUrls);
 
     // Concurrently process across pool with round-robin distribution
     const results = await Promise.all(cleanedUrls.map(getTikTokData));
     console.log('Results processed successfully via Browserless pool');
+
+    // Increment links consumed by this fingerprint
+    const updatedQuota = limiter.consume(fp, cleanedUrls.length);
+    res.setHeader('X-Sorot-Quota-Used', updatedQuota.used);
+    res.setHeader('X-Sorot-Quota-Remaining', updatedQuota.remaining);
+    console.log(`[Limiter] Fingerprint ${fp} consumed ${cleanedUrls.length} links. Session Total: ${updatedQuota.used}/${updatedQuota.max}`);
 
     return res.status(200).json(results);
   } catch (error) {

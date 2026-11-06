@@ -444,6 +444,23 @@
 
         </div>
 
+        <!-- User Quota Control Card -->
+        <div class="admin-card" style="margin-top: var(--space-lg);">
+          <div class="admin-card-header">
+            <h2 class="admin-card-title">User Quota Management (Limit 50 Link)</h2>
+            <div style="display: flex; gap: var(--space-xs);">
+              <button type="button" class="btn btn-sm" id="refreshQuotaBtn">Refresh Quota</button>
+              <button type="button" class="btn btn-sm" id="resetAllQuotaBtn" style="color: var(--color-error);">Reset Semua Kuota</button>
+            </div>
+          </div>
+          <p style="font-size: var(--text-xs); color: var(--color-muted); margin-bottom: var(--space-sm);">
+            Daftar browser fingerprint pengguna yang telah mengonsumsi kuota analitik (Maks 50 link per sesi peramban).
+          </p>
+          <div id="quotasListContainer">
+            <!-- Dynamically populated -->
+          </div>
+        </div>
+
       </section>
 
     </div>
@@ -519,6 +536,7 @@
       logoutBtn.style.display = 'inline-block';
       renderPoolMetrics(poolData);
       renderNodesList(poolData.nodes || []);
+      loadQuotas();
     }
 
     function lockPortal() {
@@ -836,6 +854,113 @@
         console.warn('Refresh failed:', e);
       }
     });
+
+    // User Quota Management
+    async function loadQuotas() {
+      try {
+        const res = await fetch('/api/admin/quotas', {
+          headers: { 'x-admin-code': activeAdminCode }
+        });
+        const data = await res.json();
+        if (data.ok) {
+          renderQuotas(data.quotas || []);
+        }
+      } catch (e) {
+        console.warn('Could not load quotas:', e);
+      }
+    }
+
+    function renderQuotas(list) {
+      const container = document.getElementById('quotasListContainer');
+      if (!container) return;
+
+      if (!list || list.length === 0) {
+        container.innerHTML = `
+          <div style="text-align: center; padding: var(--space-md); color: var(--color-muted); font-size: var(--text-xs);">
+            Belum ada data konsumsi quota dari browser fingerprint.
+          </div>
+        `;
+        return;
+      }
+
+      container.innerHTML = `
+        <div style="overflow-x: auto;">
+          <table style="width: 100%; border-collapse: collapse; font-size: var(--text-xs); text-align: left;">
+            <thead>
+              <tr style="border-bottom: var(--rule-hair) solid var(--color-rule); color: var(--color-muted);">
+                <th style="padding: 6px;">Fingerprint / IP</th>
+                <th style="padding: 6px;">Terpakai</th>
+                <th style="padding: 6px;">Sisa</th>
+                <th style="padding: 6px;">Status</th>
+                <th style="padding: 6px;">Terakhir Aktif</th>
+                <th style="padding: 6px; text-align: right;">Aksi</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${list.map(item => `
+                <tr style="border-bottom: var(--rule-hair) solid var(--color-rule-2);">
+                  <td style="padding: 8px 6px; font-family: var(--font-outlier);">${escapeHtml(item.fingerprint)}</td>
+                  <td style="padding: 8px 6px; font-weight: 700;">${item.used} / 50</td>
+                  <td style="padding: 8px 6px;">${item.remaining}</td>
+                  <td style="padding: 8px 6px;">
+                    <span class="pill-badge ${item.isExceeded ? 'pill-underperforming' : 'pill-viral'}">
+                      ${item.isExceeded ? 'LIMIT 50 CAPPED' : 'ACTIVE'}
+                    </span>
+                  </td>
+                  <td style="padding: 8px 6px; color: var(--color-muted);">${item.lastSeen ? new Date(item.lastSeen).toLocaleTimeString() : '-'}</td>
+                  <td style="padding: 8px 6px; text-align: right;">
+                    <button type="button" class="btn btn-sm" onclick="resetSingleQuota('${escapeHtml(item.fingerprint)}')">Reset Quota</button>
+                  </td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+        </div>
+      `;
+    }
+
+    window.resetSingleQuota = async function(fp) {
+      if (!confirm(`Reset quota untuk fingerprint ${fp} kembali ke 0?`)) return;
+      try {
+        const res = await fetch('/api/admin/quotas/reset', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'x-admin-code': activeAdminCode
+          },
+          body: JSON.stringify({ fingerprint: fp })
+        });
+        const data = await res.json();
+        if (data.ok) {
+          renderQuotas(data.quotas || []);
+        }
+      } catch (e) {
+        alert('Reset quota gagal: ' + e.message);
+      }
+    };
+
+    document.getElementById('resetAllQuotaBtn').addEventListener('click', async () => {
+      if (!confirm('Reset semua quota pengguna ke 0?')) return;
+      try {
+        const res = await fetch('/api/admin/quotas/reset', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'x-admin-code': activeAdminCode
+          },
+          body: JSON.stringify({})
+        });
+        const data = await res.json();
+        if (data.ok) {
+          renderQuotas(data.quotas || []);
+          alert('Semua quota berhasil direset ke 0.');
+        }
+      } catch (e) {
+        alert('Gagal reset: ' + e.message);
+      }
+    });
+
+    document.getElementById('refreshQuotaBtn').addEventListener('click', loadQuotas);
 
     // Event listeners
     authForm.addEventListener('submit', () => {

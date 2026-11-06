@@ -77,7 +77,8 @@
         <section class="panel">
           <div class="panel-header">
             <h2 class="panel-title">Batch Ingestion</h2>
-            <div style="display: flex; gap: var(--space-xs); align-items: center;">
+            <div style="display: flex; gap: var(--space-xs); align-items: center; flex-wrap: wrap;">
+              <span class="pill-badge pill-standard" id="quotaBadge" title="Quota analitik sesi ini (Maksimal 50 link)">Quota: 0/50</span>
               <span class="pill-badge pill-standard" id="poolHealthBadge" title="Browserless Multi-Token Pool Status">Engine: Checking...</span>
               <span class="pill-badge pill-standard" id="batchBadge">Idle</span>
             </div>
@@ -381,6 +382,57 @@ https://www.tiktok.com/@tokopedia/video/7346129847192839102</textarea>
       </div>
       <div class="modal-footer">
         <button type="button" class="btn btn-primary btn-sm" id="battleCloseActionBtn">Close Comparison</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Quota Modal: "You're an Amazing Runner! Slow Down or Contact Us" -->
+  <div class="modal-backdrop" id="quotaModal" role="dialog" aria-modal="true" aria-labelledby="quotaModalHeading" style="display: none;">
+    <div class="modal-dialog" style="max-width: 600px; text-align: center;">
+      <div class="modal-header" style="justify-content: center; border-bottom: none; padding-bottom: 0;">
+        <div style="width: 52px; height: 52px; border-radius: var(--radius-card); background: var(--color-accent-wash); border: var(--rule-hair) solid var(--color-accent); display: flex; align-items: center; justify-content: center; margin: 0 auto var(--space-xs);">
+          <img src="/brand/sorot-icon.png" alt="Sorot Velocity" style="width: 30px; height: 30px; object-fit: contain;">
+        </div>
+      </div>
+      <div class="modal-body" style="padding-top: var(--space-xs);">
+        <span class="pill-badge pill-viral" style="margin-bottom: var(--space-xs);">Session Milestone: 50 Links Audited</span>
+        <h3 class="panel-title" id="quotaModalHeading" style="font-family: var(--font-display); font-size: var(--text-2xl); font-weight: 700; color: var(--color-ink); line-height: 1.25; margin-bottom: var(--space-xs);">
+          You're an Amazing Runner! Slow Down or Contact Us
+        </h3>
+        <p style="font-size: var(--text-sm); color: var(--color-muted); line-height: 1.6; max-width: 480px; margin: 0 auto var(--space-md);">
+          You have sprinted through <strong>50 in-depth video audits</strong> in this session. That is world-class creative velocity!
+        </p>
+        <p style="font-size: var(--text-xs); color: var(--color-ink-2); line-height: 1.6; max-width: 480px; margin: 0 auto var(--space-md);">
+          To protect cluster resources and guarantee uninterrupted scraping fidelity, this browser session has completed its complimentary 50-link ceiling.
+        </p>
+
+        <div style="background: var(--color-paper-2); border: var(--rule-hair) solid var(--color-rule); border-radius: var(--radius-card); padding: var(--space-md); margin-bottom: var(--space-lg); display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--space-xs); text-align: center;">
+          <div>
+            <div style="font-size: var(--text-xs); color: var(--color-muted);">Audited</div>
+            <div style="font-size: var(--text-lg); font-weight: 700; color: var(--color-ink); font-family: var(--font-outlier);" id="quotaModalUsedNum">50 / 50</div>
+          </div>
+          <div>
+            <div style="font-size: var(--text-xs); color: var(--color-muted);">Engine Pace</div>
+            <div style="font-size: var(--text-lg); font-weight: 700; color: var(--color-accent-deep); font-family: var(--font-outlier);">Breakneck</div>
+          </div>
+          <div>
+            <div style="font-size: var(--text-xs); color: var(--color-muted);">Session Limit</div>
+            <div style="font-size: var(--text-lg); font-weight: 700; color: var(--color-error); font-family: var(--font-outlier);">Full Quota</div>
+          </div>
+        </div>
+
+        <p style="font-size: var(--text-xs); color: var(--color-muted); margin-bottom: var(--space-lg); line-height: 1.5;">
+          Need to analyze 500+ videos, track competitor rosters automatically, or integrate dedicated high-concurrency API pipelines? Connect directly with the engineering and growth team.
+        </p>
+
+        <div style="display: flex; gap: var(--space-xs); justify-content: center; flex-wrap: wrap;">
+          <a href="https://wa.me/?text=Halo%20Secommercs,%20saya%20sudah%20mencapai%20limit%2050%20video%20di%20Sorot%20dan%20ingin%20upgrade%20unlimited%20access" target="_blank" rel="noopener noreferrer" class="btn btn-primary" id="quotaContactBtn">
+            Contact Us (WhatsApp / Team)
+          </a>
+          <button type="button" class="btn" id="closeQuotaModalBtn">
+            Review Current 50 Insights
+          </button>
+        </div>
       </div>
     </div>
   </div>
@@ -1338,6 +1390,15 @@ https://www.tiktok.com/@tokopedia/video/7346129847192839102</textarea>
 
       showNotice(null);
 
+      // Pre-flight check: If quota already exceeded, open modal immediately
+      if (currentQuota && currentQuota.isExceeded) {
+        openQuotaModal(currentQuota);
+        showNotice("You're an Amazing Runner! Sesi 50 link telah tercapai. Silakan kontak tim kami untuk akses unlimited.", 'info');
+        return;
+      }
+
+      const clientFingerprint = getOrCreateFingerprint();
+
       if (currentMode === 'user') {
         const username = document.getElementById('usernameInput').value.trim();
         if (!username) {
@@ -1355,9 +1416,22 @@ https://www.tiktok.com/@tokopedia/video/7346129847192839102</textarea>
         try {
           const res = await fetch('/api', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: {
+              'Content-Type': 'application/json',
+              'X-Sorot-Fingerprint': clientFingerprint
+            },
             body: JSON.stringify({ username })
           });
+
+          if (res.status === 429) {
+            const errData = await res.json().catch(() => ({}));
+            if (errData.error === 'QUOTA_EXCEEDED') {
+              updateQuotaBadge(errData.quota || { used: 50, max: 50, remaining: 0, isExceeded: true });
+              openQuotaModal(errData.quota);
+              showNotice("Quota limit reached: You're an Amazing Runner! Slow Down or Contact Us", 'info');
+              return;
+            }
+          }
 
           if (!res.ok) throw new Error(`API error ${res.status}: ${await res.text()}`);
           const profileData = await res.json();
@@ -1389,9 +1463,23 @@ https://www.tiktok.com/@tokopedia/video/7346129847192839102</textarea>
             runBtn.textContent = `Scraping (${i + 1}/${urls.length})...`;
             const vRes = await fetch('/api', {
               method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
+              headers: {
+                'Content-Type': 'application/json',
+                'X-Sorot-Fingerprint': clientFingerprint
+              },
               body: JSON.stringify({ urls: [urls[i]] })
             });
+
+            if (vRes.status === 429) {
+              const errData = await vRes.json().catch(() => ({}));
+              if (errData.error === 'QUOTA_EXCEEDED') {
+                updateQuotaBadge(errData.quota || { used: 50, max: 50, remaining: 0, isExceeded: true });
+                openQuotaModal(errData.quota);
+                showNotice(errData.message || "You're an Amazing Runner! Slow Down or Contact Us", 'info');
+                break;
+              }
+            }
+
             const vData = await vRes.json();
             if (Array.isArray(vData) && vData[0]) {
               sessionData.push(vData[0]);
@@ -1410,6 +1498,7 @@ https://www.tiktok.com/@tokopedia/video/7346129847192839102</textarea>
           localStorage.setItem('sorotSession', JSON.stringify(sessionData));
           renderLedger();
           checkPoolHealth();
+          fetchQuotaStatus();
         }
 
       } else {
@@ -1436,9 +1525,22 @@ https://www.tiktok.com/@tokopedia/video/7346129847192839102</textarea>
             try {
               const res = await fetch('/api', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: {
+                  'Content-Type': 'application/json',
+                  'X-Sorot-Fingerprint': clientFingerprint
+                },
                 body: JSON.stringify({ urls: [url] })
               });
+
+              if (res.status === 429) {
+                const errData = await res.json().catch(() => ({}));
+                if (errData.error === 'QUOTA_EXCEEDED') {
+                  updateQuotaBadge(errData.quota || { used: 50, max: 50, remaining: 0, isExceeded: true });
+                  openQuotaModal(errData.quota);
+                  showNotice(errData.message || "You're an Amazing Runner! Slow Down or Contact Us", 'info');
+                  break; // Stop remaining URLs in this batch
+                }
+              }
 
               if (!res.ok) throw new Error(`API error ${res.status}: ${await res.text()}`);
 
@@ -1467,6 +1569,7 @@ https://www.tiktok.com/@tokopedia/video/7346129847192839102</textarea>
           localStorage.setItem('sorotSession', JSON.stringify(sessionData));
           renderLedger();
           checkPoolHealth();
+          fetchQuotaStatus();
         }
       }
     }
@@ -1735,6 +1838,7 @@ https://www.tiktok.com/@tokopedia/video/7346129847192839102</textarea>
       if (e.key === 'Escape') {
         closeModal();
         closeBattleModal();
+        closeQuotaModal();
       }
     });
 
@@ -1745,6 +1849,73 @@ https://www.tiktok.com/@tokopedia/video/7346129847192839102</textarea>
     document.getElementById('battleModal').addEventListener('click', (e) => {
       if (e.target.id === 'battleModal') closeBattleModal();
     });
+
+    document.getElementById('closeQuotaModalBtn').addEventListener('click', closeQuotaModal);
+    document.getElementById('quotaModal').addEventListener('click', (e) => {
+      if (e.target.id === 'quotaModal') closeQuotaModal();
+    });
+
+    let currentQuota = { used: 0, max: 50, remaining: 50, isExceeded: false };
+
+    function getOrCreateFingerprint() {
+      let fp = localStorage.getItem('sorot_fingerprint');
+      if (!fp) {
+        const screenRes = `${screen.width}x${screen.height}x${screen.colorDepth || 24}`;
+        const rand = Math.random().toString(36).substring(2, 10);
+        fp = `fp_${rand}_${screenRes.replace(/\D/g, '')}_${Date.now().toString(36)}`;
+        localStorage.setItem('sorot_fingerprint', fp);
+      }
+      return fp;
+    }
+
+    function updateQuotaBadge(quota) {
+      if (!quota) return;
+      currentQuota = quota;
+      const badge = document.getElementById('quotaBadge');
+      if (!badge) return;
+
+      const used = quota.used ?? 0;
+      const max = quota.max ?? 50;
+
+      badge.textContent = `Quota: ${used}/${max}`;
+      if (used >= max) {
+        badge.className = 'pill-badge pill-underperforming';
+        badge.textContent = `Quota: ${max}/${max} (Limit)`;
+      } else if (used >= 40) {
+        badge.className = 'pill-badge pill-passive';
+      } else {
+        badge.className = 'pill-badge pill-standard';
+      }
+    }
+
+    async function fetchQuotaStatus() {
+      try {
+        const res = await fetch('/api/quota', {
+          headers: { 'X-Sorot-Fingerprint': getOrCreateFingerprint() }
+        });
+        if (res.ok) {
+          const data = await res.json();
+          updateQuotaBadge(data);
+        }
+      } catch (e) {
+        console.warn('Could not check quota:', e);
+      }
+    }
+
+    function openQuotaModal(quotaData) {
+      const modal = document.getElementById('quotaModal');
+      if (!modal) return;
+      const used = quotaData?.used ?? currentQuota.used ?? 50;
+      const max = quotaData?.max ?? currentQuota.max ?? 50;
+      const numEl = document.getElementById('quotaModalUsedNum');
+      if (numEl) numEl.textContent = `${used} / ${max}`;
+      modal.style.display = 'grid';
+    }
+
+    function closeQuotaModal() {
+      const modal = document.getElementById('quotaModal');
+      if (modal) modal.style.display = 'none';
+    }
 
     async function checkPoolHealth() {
       try {
@@ -1765,6 +1936,7 @@ https://www.tiktok.com/@tokopedia/video/7346129847192839102</textarea>
 
     // Initial restore on load: always ensure data is active immediately
     window.addEventListener('DOMContentLoaded', () => {
+      fetchQuotaStatus();
       checkPoolHealth();
       const saved = localStorage.getItem('sorotSession') || localStorage.getItem('tiktokSightSession');
       let restored = false;
