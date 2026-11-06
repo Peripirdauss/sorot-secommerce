@@ -1,0 +1,663 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sorot Backend · API Pool Portal</title>
+  <link rel="icon" type="image/png" href="/brand/sorot-icon.png">
+  <link rel="stylesheet" href="/tokens.css">
+  <link rel="stylesheet" href="/base.css">
+  <link rel="stylesheet" href="/app.css">
+  <style>
+    .portal-auth-wrap {
+      min-height: 80vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: var(--space-xl) var(--space-md);
+    }
+    .portal-auth-card {
+      width: 100%;
+      max-width: 440px;
+      background: var(--color-paper-2);
+      border: var(--rule-hair) solid var(--color-rule);
+      border-radius: var(--radius-card);
+      box-shadow: var(--shadow-card);
+      padding: var(--space-xl);
+      text-align: center;
+    }
+    .portal-auth-icon {
+      width: 56px;
+      height: 56px;
+      margin: 0 auto var(--space-md);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: var(--radius-card);
+      background: var(--color-accent-wash);
+      border: var(--rule-hair) solid var(--color-accent-2);
+    }
+    .portal-auth-icon img {
+      width: 32px;
+      height: 32px;
+      object-fit: contain;
+    }
+    .portal-auth-title {
+      font-family: var(--font-display);
+      font-size: var(--text-xl);
+      font-weight: 700;
+      color: var(--color-ink);
+      margin-bottom: var(--space-2xs);
+    }
+    .portal-auth-desc {
+      font-size: var(--text-sm);
+      color: var(--color-muted);
+      margin-bottom: var(--space-lg);
+      line-height: 1.5;
+    }
+    .portal-pass-input {
+      width: 100%;
+      padding: var(--space-sm) var(--space-md);
+      font-family: var(--font-outlier);
+      font-size: var(--text-md);
+      letter-spacing: 0.1em;
+      border: var(--rule-hair) solid var(--color-rule-2);
+      border-radius: var(--radius-input);
+      background: var(--color-paper);
+      color: var(--color-ink);
+      margin-bottom: var(--space-md);
+      box-sizing: border-box;
+      text-align: center;
+    }
+    .portal-pass-input:focus {
+      outline: 2px solid var(--color-focus);
+      border-color: transparent;
+    }
+    .portal-alert {
+      font-size: var(--text-xs);
+      padding: var(--space-xs) var(--space-sm);
+      border-radius: var(--radius-input);
+      margin-bottom: var(--space-md);
+      display: none;
+    }
+    .portal-alert-error {
+      background: var(--color-error-wash);
+      border: var(--rule-hair) solid var(--color-error);
+      color: var(--color-error);
+    }
+    .portal-alert-success {
+      background: var(--color-accent-wash);
+      border: var(--rule-hair) solid var(--color-accent);
+      color: var(--color-accent-deep);
+    }
+    .admin-dashboard {
+      display: none;
+      padding-top: var(--space-lg);
+      padding-bottom: var(--space-3xl);
+    }
+    .admin-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+      gap: var(--space-lg);
+      margin-top: var(--space-lg);
+    }
+    @media (max-width: 900px) {
+      .admin-grid {
+        grid-template-columns: minmax(0, 1fr);
+      }
+    }
+    .admin-card {
+      background: var(--color-paper);
+      border: var(--rule-hair) solid var(--color-rule);
+      border-radius: var(--radius-card);
+      box-shadow: var(--shadow-card);
+      padding: var(--space-lg);
+    }
+    .admin-card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: var(--space-md);
+      padding-bottom: var(--space-xs);
+      border-bottom: var(--rule-hair) solid var(--color-rule);
+    }
+    .admin-card-title {
+      font-family: var(--font-display);
+      font-size: var(--text-lg);
+      font-weight: 700;
+      color: var(--color-ink);
+      margin: 0;
+    }
+    .node-item-card {
+      background: var(--color-paper-2);
+      border: var(--rule-hair) solid var(--color-rule);
+      border-radius: var(--radius-input);
+      padding: var(--space-md);
+      margin-bottom: var(--space-sm);
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-xs);
+    }
+    .node-item-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .node-item-id {
+      font-family: var(--font-outlier);
+      font-weight: 700;
+      font-size: var(--text-sm);
+      color: var(--color-ink);
+    }
+    .node-token-display {
+      font-family: var(--font-outlier);
+      font-size: var(--text-xs);
+      color: var(--color-ink-2);
+      word-break: break-all;
+      background: var(--color-paper);
+      padding: var(--space-2xs) var(--space-xs);
+      border-radius: var(--radius-input);
+      border: var(--rule-hair) solid var(--color-rule-2);
+    }
+    .node-item-stats {
+      font-size: var(--text-xs);
+      color: var(--color-muted);
+      display: flex;
+      gap: var(--space-md);
+      margin-top: var(--space-2xs);
+    }
+    .node-item-actions {
+      display: flex;
+      gap: var(--space-xs);
+      margin-top: var(--space-xs);
+    }
+    .token-textarea {
+      width: 100%;
+      min-height: 140px;
+      padding: var(--space-sm);
+      font-family: var(--font-outlier);
+      font-size: var(--text-xs);
+      border: var(--rule-hair) solid var(--color-rule-2);
+      border-radius: var(--radius-input);
+      background: var(--color-paper-2);
+      color: var(--color-ink);
+      box-sizing: border-box;
+      resize: vertical;
+      margin-bottom: var(--space-sm);
+    }
+    .token-textarea:focus {
+      outline: 2px solid var(--color-focus);
+      border-color: transparent;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Top Masthead -->
+  <header class="site-header">
+    <div class="container nav-container">
+      <div class="brand-group" aria-label="Sorot Portal">
+        <img src="/brand/sorot-logo.png" alt="Sorot by Secommercs" class="brand-logo-img">
+        <div class="brand-divider" aria-hidden="true"></div>
+        <span class="brand-tagline">Backend Pool Console</span>
+      </div>
+      <div class="nav-actions">
+        <span class="pill-badge pill-viral" id="portalHeaderBadge">Private Route</span>
+        <button type="button" class="btn btn-sm" id="logoutBtn" style="display: none;">Kunci Akses</button>
+      </div>
+    </div>
+  </header>
+
+  <main class="main-content">
+    <div class="container">
+
+      <!-- Gate / Passcode Screen -->
+      <section class="portal-auth-wrap" id="authGateSection">
+        <div class="portal-auth-card">
+          <div class="portal-auth-icon">
+            <img src="/brand/sorot-icon.png" alt="Sorot Key">
+          </div>
+          <h1 class="portal-auth-title">Otorisasi Backend</h1>
+          <p class="portal-auth-desc">
+            Halaman ini khusus pengelola sistem. Masukkan kode otorisasi untuk menambah dan mengelola pool API Browserless.
+          </p>
+
+          <div class="portal-alert portal-alert-error" id="authErrorAlert"></div>
+
+          <form id="authForm" onsubmit="return false;">
+            <input
+              type="password"
+              id="passcodeInput"
+              class="portal-pass-input"
+              placeholder="Masukkan kode akses"
+              autocomplete="current-password"
+              required
+            >
+            <button type="submit" class="btn btn-primary" id="loginBtn" style="width: 100%;">
+              Buka Akses Pool
+            </button>
+          </form>
+        </div>
+      </section>
+
+      <!-- Authenticated Admin Dashboard -->
+      <section class="admin-dashboard" id="adminDashboardSection">
+
+        <!-- Metrics Strip -->
+        <div class="metrics-strip">
+          <div class="metric-cell">
+            <div class="metric-label">
+              <span>Pool Size</span>
+              <span>Total Nodes</span>
+            </div>
+            <div class="metric-value num" id="metricPoolSize">0</div>
+            <div class="metric-hint">Jumlah token Browserless terpasang</div>
+          </div>
+
+          <div class="metric-cell">
+            <div class="metric-label">
+              <span>Healthy Nodes</span>
+              <span>Siap Pakai</span>
+            </div>
+            <div class="metric-value num" id="metricHealthyNodes">0</div>
+            <div class="metric-hint">Node siap merespons antrean</div>
+          </div>
+
+          <div class="metric-cell">
+            <div class="metric-label">
+              <span>Cooldown Nodes</span>
+              <span>Circuit Breaker</span>
+            </div>
+            <div class="metric-value num" id="metricCooldownNodes">0</div>
+            <div class="metric-hint">Node dalam masa jeda 60s</div>
+          </div>
+
+          <div class="metric-cell">
+            <div class="metric-label">
+              <span>Round Robin</span>
+              <span>Current Cursor</span>
+            </div>
+            <div class="metric-value num" id="metricCurrentIndex">#0</div>
+            <div class="metric-hint">Pointer giliran request berikutnya</div>
+          </div>
+        </div>
+
+        <div class="admin-grid">
+
+          <!-- Left Column: Add New Token -->
+          <div class="admin-card">
+            <div class="admin-card-header">
+              <h2 class="admin-card-title">Tambah Token Browserless</h2>
+              <span class="pill-badge pill-standard">Auto-Persist (.env)</span>
+            </div>
+
+            <p style="font-size: var(--text-xs); color: var(--color-muted); margin-bottom: var(--space-sm);">
+              Tempel token Browserless yang baru Anda miliki. Anda bisa memasukkan 1 token atau banyak token sekaligus (pisahkan dengan koma atau baris baru).
+            </p>
+
+            <div class="portal-alert" id="addAlert"></div>
+
+            <textarea
+              id="newTokenInput"
+              class="token-textarea"
+              placeholder="Contoh:&#10;e9f47a61-1234-4567-89ab-cdef01234567&#10;a1b2c3d4-5678-90ab-cdef-1234567890ab"
+            ></textarea>
+
+            <div style="display: flex; gap: var(--space-xs); justify-content: flex-end;">
+              <button type="button" class="btn btn-sm" id="testDraftTokenBtn">Test Token Pertama</button>
+              <button type="button" class="btn btn-primary btn-sm" id="saveTokensBtn">Simpan ke Pool</button>
+            </div>
+
+            <hr style="border: none; border-top: var(--rule-hair) solid var(--color-rule); margin: var(--space-lg) 0;">
+
+            <h3 style="font-family: var(--font-display); font-size: var(--text-sm); font-weight: 700; margin-bottom: var(--space-xs); color: var(--color-ink);">
+              Ping Sandbox Validator
+            </h3>
+            <p style="font-size: var(--text-xs); color: var(--color-muted); margin-bottom: var(--space-xs);">
+              Uji coba konektivitas WebSocket ke Browserless tanpa menyimpannya ke pool:
+            </p>
+            <div style="display: flex; gap: var(--space-xs);">
+              <input
+                type="text"
+                id="sandboxTokenInput"
+                class="portal-pass-input"
+                style="margin-bottom: 0; text-align: left; font-size: var(--text-xs);"
+                placeholder="Masukkan token Browserless untuk uji koneksi"
+              >
+              <button type="button" class="btn btn-sm" id="pingSandboxBtn">Ping</button>
+            </div>
+            <div id="sandboxResult" style="font-size: var(--text-xs); margin-top: var(--space-xs); color: var(--color-muted);"></div>
+          </div>
+
+          <!-- Right Column: Active Node Pool List -->
+          <div class="admin-card">
+            <div class="admin-card-header">
+              <h2 class="admin-card-title">Daftar Node Aktif</h2>
+              <button type="button" class="btn btn-sm" id="refreshNodesBtn">Refresh</button>
+            </div>
+
+            <div id="nodesListContainer">
+              <!-- Rendered dynamically -->
+            </div>
+          </div>
+
+        </div>
+
+      </section>
+
+    </div>
+  </main>
+
+  <script>
+    let activeAdminCode = sessionStorage.getItem('sorot_admin_code') || '';
+    let currentPoolData = null;
+
+    // DOM Elements
+    const authGateSection = document.getElementById('authGateSection');
+    const adminDashboardSection = document.getElementById('adminDashboardSection');
+    const authForm = document.getElementById('authForm');
+    const passcodeInput = document.getElementById('passcodeInput');
+    const authErrorAlert = document.getElementById('authErrorAlert');
+    const logoutBtn = document.getElementById('logoutBtn');
+    const addAlert = document.getElementById('addAlert');
+    const nodesListContainer = document.getElementById('nodesListContainer');
+
+    function escapeHtml(str) {
+      if (!str) return '';
+      return String(str).replace(/[&<>"']/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[m]);
+    }
+
+    async function verifyAndLoad(code) {
+      try {
+        const res = await fetch('/api/admin/verify', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ code })
+        });
+
+        const data = await res.json();
+        if (!res.ok || !data.ok) {
+          throw new Error(data.error || 'Code akses salah');
+        }
+
+        activeAdminCode = code;
+        sessionStorage.setItem('sorot_admin_code', code);
+        showDashboard(data);
+      } catch (err) {
+        authErrorAlert.textContent = err.message;
+        authErrorAlert.style.display = 'block';
+        passcodeInput.value = '';
+        passcodeInput.focus();
+      }
+    }
+
+    function showDashboard(poolData) {
+      currentPoolData = poolData;
+      authGateSection.style.display = 'none';
+      adminDashboardSection.style.display = 'block';
+      logoutBtn.style.display = 'inline-block';
+      renderPoolMetrics(poolData);
+      renderNodesList(poolData.nodes || []);
+    }
+
+    function lockPortal() {
+      sessionStorage.removeItem('sorot_admin_code');
+      activeAdminCode = '';
+      authGateSection.style.display = 'flex';
+      adminDashboardSection.style.display = 'none';
+      logoutBtn.style.display = 'none';
+      authErrorAlert.style.display = 'none';
+      passcodeInput.value = '';
+      passcodeInput.focus();
+    }
+
+    function renderPoolMetrics(data) {
+      document.getElementById('metricPoolSize').textContent = data.poolSize ?? 0;
+      document.getElementById('metricHealthyNodes').textContent = data.healthyNodes ?? 0;
+      document.getElementById('metricCooldownNodes').textContent = data.coolingDownNodes ?? 0;
+      document.getElementById('metricCurrentIndex').textContent = '#' + (data.currentIndex ?? 0);
+    }
+
+    function renderNodesList(nodes) {
+      if (!nodes || nodes.length === 0) {
+        nodesListContainer.innerHTML = `
+          <div style="text-align: center; padding: var(--space-lg); color: var(--color-muted); font-size: var(--text-sm);">
+            Belum ada token Browserless yang terdaftar di pool.
+          </div>
+        `;
+        return;
+      }
+
+      nodesListContainer.innerHTML = nodes.map(node => {
+        const isHealthy = node.status === 'HEALTHY';
+        const badgeClass = isHealthy ? 'pill-viral' : 'pill-underperforming';
+        const badgeText = isHealthy ? 'HEALTHY' : `COOLDOWN (${node.cooldownRemainingSec || 0}s)`;
+
+        return `
+          <div class="node-item-card" id="card-${node.id}">
+            <div class="node-item-header">
+              <span class="node-item-id">${escapeHtml(node.id)}</span>
+              <span class="pill-badge ${badgeClass}">${badgeText}</span>
+            </div>
+
+            <div class="node-token-display">
+              <span id="tok-text-${node.id}">${escapeHtml(node.maskedToken)}</span>
+              <button type="button" class="btn btn-sm" style="padding: 2px 6px; font-size: 10px; margin-left: 6px;" onclick="toggleTokenReveal('${node.id}', '${escapeHtml(node.token || '')}')">Reveal</button>
+            </div>
+
+            <div class="node-item-stats">
+              <span>Requests: <strong>${node.totalRequests || 0}</strong></span>
+              <span>Sukses: <strong>${node.totalSuccesses || 0}</strong></span>
+              <span>Gagal: <strong>${node.totalFailures || 0}</strong></span>
+            </div>
+
+            <div class="node-item-actions">
+              <button type="button" class="btn btn-sm" onclick="testNodeConnection('${node.id}', '${escapeHtml(node.token || '')}')">Test Node</button>
+              <button type="button" class="btn btn-sm" style="color: var(--color-error);" onclick="deleteNode('${node.id}')">Hapus</button>
+              <span id="status-${node.id}" style="font-size: var(--text-xs); color: var(--color-muted); align-self: center;"></span>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    window.toggleTokenReveal = function(nodeId, fullToken) {
+      const el = document.getElementById(`tok-text-${nodeId}`);
+      if (!el) return;
+      if (el.getAttribute('data-revealed') === 'true') {
+        const node = (currentPoolData?.nodes || []).find(n => n.id === nodeId);
+        el.textContent = node ? node.maskedToken : '***';
+        el.removeAttribute('data-revealed');
+      } else {
+        el.textContent = fullToken;
+        el.setAttribute('data-revealed', 'true');
+      }
+    };
+
+    window.testNodeConnection = async function(nodeId, token) {
+      const statusSpan = document.getElementById(`status-${nodeId}`);
+      if (statusSpan) statusSpan.textContent = 'Menghubungkan...';
+
+      try {
+        const res = await fetch('/api/admin/test-token', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'x-admin-code': activeAdminCode
+          },
+          body: JSON.stringify({ token })
+        });
+        const result = await res.json();
+        if (result.ok) {
+          if (statusSpan) statusSpan.textContent = `Online (${result.latencyMs}ms)`;
+        } else {
+          if (statusSpan) statusSpan.textContent = `Gagal: ${result.error?.slice(0, 40)}`;
+        }
+      } catch (err) {
+        if (statusSpan) statusSpan.textContent = `Error: ${err.message}`;
+      }
+    };
+
+    window.deleteNode = async function(nodeId) {
+      if (!confirm(`Hapus node ${nodeId} dari pool Browserless?`)) return;
+
+      try {
+        const res = await fetch('/api/admin/tokens', {
+          method: 'DELETE',
+          headers: {
+            'Content-Type': 'application/json',
+            'x-admin-code': activeAdminCode
+          },
+          body: JSON.stringify({ id: nodeId })
+        });
+        const data = await res.json();
+        if (data.ok) {
+          currentPoolData = data;
+          renderPoolMetrics(data);
+          renderNodesList(data.nodes || []);
+        } else {
+          alert(`Gagal menghapus: ${data.error}`);
+        }
+      } catch (err) {
+        alert(`Error: ${err.message}`);
+      }
+    };
+
+    // Save tokens action
+    document.getElementById('saveTokensBtn').addEventListener('click', async () => {
+      const input = document.getElementById('newTokenInput').value.trim();
+      if (!input) {
+        addAlert.className = 'portal-alert portal-alert-error';
+        addAlert.textContent = 'Silakan masukkan minimal 1 token Browserless.';
+        addAlert.style.display = 'block';
+        return;
+      }
+
+      addAlert.style.display = 'none';
+      try {
+        const res = await fetch('/api/admin/tokens', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'x-admin-code': activeAdminCode
+          },
+          body: JSON.stringify({ tokens: input })
+        });
+
+        const data = await res.json();
+        if (!res.ok || !data.ok) throw new Error(data.error || 'Gagal menyimpan token');
+
+        addAlert.className = 'portal-alert portal-alert-success';
+        addAlert.textContent = data.message || 'Token berhasil disimpan ke pool!';
+        addAlert.style.display = 'block';
+
+        document.getElementById('newTokenInput').value = '';
+        currentPoolData = data;
+        renderPoolMetrics(data);
+        renderNodesList(data.nodes || []);
+      } catch (err) {
+        addAlert.className = 'portal-alert portal-alert-error';
+        addAlert.textContent = err.message;
+        addAlert.style.display = 'block';
+      }
+    });
+
+    // Test first token draft
+    document.getElementById('testDraftTokenBtn').addEventListener('click', async () => {
+      const input = document.getElementById('newTokenInput').value.trim();
+      const first = input.split(/[\s,]+/)[0];
+      if (!first) {
+        alert('Masukkan token pada kotak teks terlebih dahulu.');
+        return;
+      }
+
+      addAlert.className = 'portal-alert';
+      addAlert.textContent = 'Menguji token ke Browserless...';
+      addAlert.style.display = 'block';
+
+      try {
+        const res = await fetch('/api/admin/test-token', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'x-admin-code': activeAdminCode
+          },
+          body: JSON.stringify({ token: first })
+        });
+        const result = await res.json();
+        if (result.ok) {
+          addAlert.className = 'portal-alert portal-alert-success';
+          addAlert.textContent = `Token valid! Berhasil terkoneksi dalam ${result.latencyMs}ms.`;
+        } else {
+          addAlert.className = 'portal-alert portal-alert-error';
+          addAlert.textContent = `Token gagal dihubungi: ${result.error}`;
+        }
+      } catch (e) {
+        addAlert.className = 'portal-alert portal-alert-error';
+        addAlert.textContent = `Error: ${e.message}`;
+      }
+    });
+
+    // Ping sandbox
+    document.getElementById('pingSandboxBtn').addEventListener('click', async () => {
+      const tok = document.getElementById('sandboxTokenInput').value.trim();
+      const resEl = document.getElementById('sandboxResult');
+      if (!tok) {
+        resEl.textContent = 'Masukkan token untuk diuji.';
+        return;
+      }
+      resEl.textContent = 'Menghubungkan ke wss://chrome.browserless.io...';
+      try {
+        const res = await fetch('/api/admin/test-token', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'x-admin-code': activeAdminCode
+          },
+          body: JSON.stringify({ token: tok })
+        });
+        const data = await res.json();
+        if (data.ok) {
+          resEl.innerHTML = `<span style="color: var(--color-success); font-weight: 700;">Terkoneksi Berhasil (${data.latencyMs}ms). Token siap digunakan.</span>`;
+        } else {
+          resEl.innerHTML = `<span style="color: var(--color-error);">Gagal: ${escapeHtml(data.error)}</span>`;
+        }
+      } catch (err) {
+        resEl.innerHTML = `<span style="color: var(--color-error);">Error: ${escapeHtml(err.message)}</span>`;
+      }
+    });
+
+    // Refresh nodes
+    document.getElementById('refreshNodesBtn').addEventListener('click', async () => {
+      try {
+        const res = await fetch('/api/admin/tokens', {
+          headers: { 'x-admin-code': activeAdminCode }
+        });
+        const data = await res.json();
+        if (data.ok) {
+          currentPoolData = data;
+          renderPoolMetrics(data);
+          renderNodesList(data.nodes || []);
+        }
+      } catch (e) {
+        console.warn('Refresh failed:', e);
+      }
+    });
+
+    // Event listeners
+    authForm.addEventListener('submit', () => {
+      const val = passcodeInput.value.trim();
+      if (val) verifyAndLoad(val);
+    });
+
+    logoutBtn.addEventListener('click', lockPortal);
+
+    // Auto-login on load if session key exists
+    window.addEventListener('DOMContentLoaded', () => {
+      if (activeAdminCode) {
+        verifyAndLoad(activeAdminCode);
+      }
+    });
+  </script>
+</body>
+</html>

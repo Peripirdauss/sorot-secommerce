@@ -299,6 +299,100 @@ module.exports = async (req, res) => {
     return res.status(200).end();
   }
 
+  const rawUrl = req.url || '/api';
+  const parsed = new URL(rawUrl, 'http://localhost');
+
+  // Helper to verify admin passcode
+  const checkAdminAuth = () => {
+    const adminCode = (process.env.ADMIN_SECRET_CODE || 'sorotganteng').trim();
+    const provided = (req.headers['x-admin-code'] || req.headers['authorization']?.replace(/^Bearer\s+/i, '') || '').trim();
+    return provided === adminCode;
+  };
+
+  // --- Admin GUI Endpoints (/api/admin/*) ---
+  if (parsed.pathname.startsWith('/api/admin')) {
+    let body = req.body;
+    if (typeof body === 'string') {
+      try { body = JSON.parse(body); } catch (e) { body = {}; }
+    }
+
+    // 1. Verify Passcode
+    if (parsed.pathname === '/api/admin/verify' && req.method === 'POST') {
+      const adminCode = (process.env.ADMIN_SECRET_CODE || 'sorotganteng').trim();
+      const codeInput = (body?.code || '').trim();
+      if (codeInput === adminCode) {
+        return res.status(200).json({
+          ok: true,
+          message: 'Akses admin berhasil diverifikasi',
+          ...pool.getStatus(true)
+        });
+      }
+      return res.status(401).json({
+        ok: false,
+        error: 'Code masuk salah. Akses ditolak.'
+      });
+    }
+
+    // Authentication Gate for all subsequent admin actions
+    if (!checkAdminAuth()) {
+      return res.status(401).json({ error: 'Unauthorized: Invalid admin code' });
+    }
+
+    // 2. Get full pool details
+    if (parsed.pathname === '/api/admin/tokens' && req.method === 'GET') {
+      return res.status(200).json({
+        ok: true,
+        ...pool.getStatus(true)
+      });
+    }
+
+    // 3. Add new token(s)
+    if (parsed.pathname === '/api/admin/tokens' && req.method === 'POST') {
+      const rawTokens = body?.tokens || body?.token || [];
+      const tokenList = Array.isArray(rawTokens)
+        ? rawTokens
+        : String(rawTokens).split(/[\s,]+/);
+
+      const result = pool.addTokens(tokenList);
+      return res.status(200).json({
+        ok: true,
+        message: `${result.added.length} token berhasil ditambahkan dan disimpan ke pool`,
+        added: result.added,
+        ...pool.getStatus(true)
+      });
+    }
+
+    // 4. Delete token
+    if (parsed.pathname === '/api/admin/tokens' && req.method === 'DELETE') {
+      const target = body?.id || body?.token;
+      if (!target) {
+        return res.status(400).json({ error: 'Missing target token id or token string' });
+      }
+      try {
+        const result = pool.removeToken(target);
+        return res.status(200).json({
+          ok: true,
+          message: `Token ${target} berhasil dihapus dari pool`,
+          ...pool.getStatus(true)
+        });
+      } catch (err) {
+        return res.status(404).json({ error: err.message });
+      }
+    }
+
+    // 5. Test connection of a token
+    if (parsed.pathname === '/api/admin/test-token' && req.method === 'POST') {
+      const tokenToTest = body?.token;
+      if (!tokenToTest) {
+        return res.status(400).json({ error: 'Missing token to test' });
+      }
+      const testResult = await pool.testConnection(tokenToTest);
+      return res.status(200).json(testResult);
+    }
+
+    return res.status(404).json({ error: 'Admin route not found' });
+  }
+
   // Diagnostic, Health & Pool Inspection endpoint
   if (req.method === 'GET') {
     const rawUrl = req.url || '/api';

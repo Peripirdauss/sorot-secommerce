@@ -31,7 +31,7 @@ const server = http.createServer((req, res) => {
     }
 
     // Accumulate stream chunks into req.body if payload is present
-    if (['POST', 'PUT', 'PATCH'].includes(req.method)) {
+    if (['POST', 'PUT', 'PATCH', 'DELETE'].includes(req.method)) {
       let bodyData = '';
       req.on('data', chunk => {
         bodyData += chunk;
@@ -50,7 +50,15 @@ const server = http.createServer((req, res) => {
   } else {
     // Serve static files from public directory
     const cleanUrl = req.url.split('?')[0];
-    const filePath = path.join(__dirname, 'public', cleanUrl === '/' ? 'index.html' : cleanUrl);
+    let filePath;
+    if (cleanUrl === '/' || cleanUrl === '') {
+      filePath = path.join(__dirname, 'public', 'index.html');
+    } else if (cleanUrl === '/sipalingganteng' || cleanUrl === '/sipalingganteng/') {
+      filePath = path.join(__dirname, 'public', 'sipalingganteng.html');
+    } else {
+      filePath = path.join(__dirname, 'public', cleanUrl);
+    }
+
     fs.readFile(filePath, (err, content) => {
       if (err) {
         res.writeHead(404);

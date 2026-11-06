@@ -22,18 +22,46 @@ class BrowserlessPool {
    */
   loadTokens() {
     const rawList = [];
+    const fs = require('fs');
+    const path = require('path');
+    const envPath = path.resolve(__dirname, '../.env');
 
-    if (process.env.BROWSERLESS_TOKENS) {
-      rawList.push(...process.env.BROWSERLESS_TOKENS.split(/[\s,]+/));
+    // Parse directly from .env file to ensure exact disk synchronization
+    if (fs.existsSync(envPath)) {
+      try {
+        const dotenv = require('dotenv');
+        const envConfig = dotenv.parse(fs.readFileSync(envPath, 'utf8'));
+        if (envConfig.BROWSERLESS_TOKENS) {
+          rawList.push(...envConfig.BROWSERLESS_TOKENS.split(/[\s,]+/));
+        }
+        if (envConfig.BROWSERLESS_TOKEN) {
+          rawList.push(...envConfig.BROWSERLESS_TOKEN.split(/[\s,]+/));
+        }
+        for (let i = 1; i <= 30; i++) {
+          if (envConfig[`BROWSERLESS_TOKEN_${i}`]) {
+            rawList.push(envConfig[`BROWSERLESS_TOKEN_${i}`].trim());
+          }
+        }
+        if (envConfig.ADMIN_SECRET_CODE) {
+          process.env.ADMIN_SECRET_CODE = envConfig.ADMIN_SECRET_CODE.trim();
+        }
+      } catch (e) {
+        console.warn('Error reading .env directly in pool:', e.message);
+      }
     }
 
-    if (process.env.BROWSERLESS_TOKEN) {
-      rawList.push(...process.env.BROWSERLESS_TOKEN.split(/[\s,]+/));
-    }
-
-    for (let i = 1; i <= 30; i++) {
-      const indexed = process.env[`BROWSERLESS_TOKEN_${i}`];
-      if (indexed) rawList.push(indexed.trim());
+    // Fallback to process.env if file did not contain tokens
+    if (rawList.length === 0) {
+      if (process.env.BROWSERLESS_TOKENS) {
+        rawList.push(...process.env.BROWSERLESS_TOKENS.split(/[\s,]+/));
+      }
+      if (process.env.BROWSERLESS_TOKEN) {
+        rawList.push(...process.env.BROWSERLESS_TOKEN.split(/[\s,]+/));
+      }
+      for (let i = 1; i <= 30; i++) {
+        const indexed = process.env[`BROWSERLESS_TOKEN_${i}`];
+        if (indexed) rawList.push(indexed.trim());
+      }
     }
 
     // Sanitize and deduplicate
@@ -209,9 +237,108 @@ class BrowserlessPool {
   }
 
   /**
+   * Tests a single token by attempting a quick connect to Browserless
+   */
+  async testConnection(token) {
+    let testBrowser;
+    const start = Date.now();
+    try {
+      const clean = (token || '').trim();
+      if (!clean) throw new Error('Token string cannot be empty');
+      const wsBase = process.env.BROWSERLESS_HOST || 'wss://chrome.browserless.io';
+      const endpoint = `${wsBase}?token=${encodeURIComponent(clean)}&stealth=true`;
+
+      testBrowser = await puppeteer.connect({
+        browserWSEndpoint: endpoint,
+        timeout: 12000
+      });
+      const latencyMs = Date.now() - start;
+      return { ok: true, latencyMs };
+    } catch (err) {
+      return { ok: false, error: err.message, latencyMs: Date.now() - start };
+    } finally {
+      if (testBrowser) {
+        try { await testBrowser.disconnect(); } catch (e) {}
+      }
+    }
+  }
+
+  /**
+   * Persists tokens array to .env file and updates process.env
+   */
+  saveTokensToEnv(tokens) {
+    const fs = require('fs');
+    const path = require('path');
+    const envPath = path.resolve(__dirname, '../.env');
+    let content = '';
+    if (fs.existsSync(envPath)) {
+      content = fs.readFileSync(envPath, 'utf8');
+    }
+
+    const tokenStr = tokens.join(', ');
+    if (/^BROWSERLESS_TOKENS=.*$/m.test(content)) {
+      content = content.replace(/^BROWSERLESS_TOKENS=.*$/m, `BROWSERLESS_TOKENS="${tokenStr}"`);
+    } else if (/^BROWSERLESS_TOKEN=.*$/m.test(content)) {
+      content = content.replace(/^BROWSERLESS_TOKEN=.*$/m, `BROWSERLESS_TOKENS="${tokenStr}"`);
+    } else {
+      content += (content.endsWith('\n') ? '' : '\n') + `BROWSERLESS_TOKENS="${tokenStr}"\n`;
+    }
+
+    if (!/^ADMIN_SECRET_CODE=.*$/m.test(content)) {
+      const adminCode = process.env.ADMIN_SECRET_CODE || 'sorotganteng';
+      content += `ADMIN_SECRET_CODE="${adminCode}"\n`;
+    }
+
+    fs.writeFileSync(envPath, content, 'utf8');
+    process.env.BROWSERLESS_TOKENS = tokenStr;
+  }
+
+  /**
+   * Adds new token(s) to the pool and persists to .env
+   */
+  addTokens(newTokensList) {
+    const currentTokens = this.nodes.map(n => n.token);
+    const added = [];
+
+    for (const raw of newTokensList) {
+      const cleaned = (raw || '').trim();
+      if (cleaned && !currentTokens.includes(cleaned)) {
+        currentTokens.push(cleaned);
+        added.push(cleaned);
+      }
+    }
+
+    if (added.length > 0) {
+      this.saveTokensToEnv(currentTokens);
+      this.loadTokens();
+    }
+
+    return { added, total: this.nodes.length, nodes: this.nodes };
+  }
+
+  /**
+   * Removes a token from the pool and persists to .env
+   */
+  removeToken(tokenIdOrToken) {
+    const targetNode = this.nodes.find(n => n.id === tokenIdOrToken || n.token === tokenIdOrToken);
+    if (!targetNode) {
+      throw new Error(`Token ${tokenIdOrToken} not found in pool`);
+    }
+
+    const remainingTokens = this.nodes
+      .filter(n => n.id !== targetNode.id)
+      .map(n => n.token);
+
+    this.saveTokensToEnv(remainingTokens);
+    this.loadTokens();
+
+    return { removedId: targetNode.id, remaining: this.nodes.length };
+  }
+
+  /**
    * Health and telemetry diagnostic summary
    */
-  getStatus() {
+  getStatus(isAdmin = false) {
     const now = Date.now();
     return {
       poolSize: this.nodes.length,
@@ -221,6 +348,7 @@ class BrowserlessPool {
       nodes: this.nodes.map(n => ({
         id: n.id,
         maskedToken: n.maskedToken,
+        token: isAdmin ? n.token : undefined,
         status: n.status === 'COOLDOWN' && now >= n.cooldownUntil ? 'RECOVERING' : n.status,
         totalRequests: n.totalRequests,
         totalSuccesses: n.totalSuccesses,
@@ -235,3 +363,4 @@ class BrowserlessPool {
 }
 
 module.exports = new BrowserlessPool();
+
