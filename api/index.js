@@ -477,13 +477,11 @@ module.exports = async (req, res) => {
     }
 
     res.setHeader('Content-Type', 'application/json');
-    res.setHeader('X-Sorot-Engine', 'browserless-pool');
-    res.setHeader('X-Sorot-Pool-Size', pool.nodes.length);
+    res.setHeader('X-Sorot-Engine', 'sorot-engine');
     return res.status(200).json({
       status: 'healthy',
-      engine: 'browserless-pool',
-      reloaded: isReload,
-      ...pool.getStatus()
+      engine: 'sorot-engine',
+      reloaded: isReload
     });
   }
 
@@ -494,8 +492,7 @@ module.exports = async (req, res) => {
       return res.status(405).json({ error: "Method not allowed" });
     }
 
-    res.setHeader('X-Sorot-Engine', 'browserless-pool');
-    res.setHeader('X-Sorot-Pool-Size', pool.nodes.length);
+    res.setHeader('X-Sorot-Engine', 'sorot-engine');
 
     let body = req.body;
     if (typeof body === 'string') {
@@ -526,6 +523,9 @@ module.exports = async (req, res) => {
 
       console.log(`Profile extraction requested for: ${body.username} [User: ${fp}]`);
       const profileResult = await getTikTokUserVideos(body.username);
+      if (profileResult && typeof profileResult === 'object') {
+        delete profileResult._poolMeta;
+      }
       return res.status(200).json(profileResult);
     }
 
@@ -562,7 +562,16 @@ module.exports = async (req, res) => {
     res.setHeader('X-Sorot-Quota-Remaining', updatedQuota.remaining);
     console.log(`[Limiter] Fingerprint ${fp} consumed ${cleanedUrls.length} links. Session Total: ${updatedQuota.used}/${updatedQuota.max}`);
 
-    return res.status(200).json(results);
+    // Sanitize results: strip internal node and worker credentials before sending to client
+    const sanitizedResults = results.map(item => {
+      if (item && typeof item === 'object') {
+        const { _poolMeta, ...rest } = item;
+        return rest;
+      }
+      return item;
+    });
+
+    return res.status(200).json(sanitizedResults);
   } catch (error) {
     console.error('Unhandled API error:', error);
     return res.status(500).json({ error: error.message || 'Internal server error' });
