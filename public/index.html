@@ -101,9 +101,7 @@
                 class="url-textarea"
                 placeholder="https://www.tiktok.com/@creator/video/7123456789012345678"
                 aria-label="TikTok Video URLs"
-              >https://www.tiktok.com/@mineralbotanica/video/7703890519725739285
-https://www.tiktok.com/@aerostreet/video/7345812901928374829
-https://www.tiktok.com/@tokopedia/video/7346129847192839102</textarea>
+              ></textarea>
             </div>
 
             <!-- Username Ingestion Mode -->
@@ -1953,8 +1951,7 @@ https://www.tiktok.com/@tokopedia/video/7346129847192839102</textarea>
       }
 
       if (!restored) {
-        sessionData = JSON.parse(JSON.stringify(sampleDataset));
-        localStorage.setItem('sorotSession', JSON.stringify(sessionData));
+        sessionData = [];
       }
 
       renderLedger();
