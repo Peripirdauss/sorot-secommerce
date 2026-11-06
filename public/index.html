@@ -212,6 +212,54 @@ https://www.tiktok.com/@tokopedia/video/7346129847192839102</textarea>
             </div>
           </div>
 
+          <!-- Creator Profile Intelligence Card -->
+          <div id="creatorProfileCard" class="creator-card" style="display: none;">
+            <div class="creator-card-main">
+              <div class="creator-avatar-wrap">
+                <img id="creatorAvatarImg" src="/brand/sorot-icon.png" alt="Creator Avatar" class="creator-avatar">
+              </div>
+              <div class="creator-meta">
+                <div class="creator-title-row">
+                  <h3 id="creatorNickname" class="creator-name">-</h3>
+                  <span id="creatorHandle" class="creator-handle">@-</span>
+                  <span id="creatorBadge" class="pill-badge pill-viral" style="display: none;">Verified Seller</span>
+                </div>
+                <p id="creatorBio" class="creator-bio">-</p>
+              </div>
+            </div>
+
+            <div class="creator-stats-grid">
+              <div class="creator-stat-cell">
+                <span class="creator-stat-label">Followers</span>
+                <span id="creatorFollowersVal" class="creator-stat-num num">0</span>
+              </div>
+              <div class="creator-stat-cell">
+                <span class="creator-stat-label">Total Likes</span>
+                <span id="creatorLikesVal" class="creator-stat-num num">0</span>
+              </div>
+              <div class="creator-stat-cell">
+                <span class="creator-stat-label">Published Videos</span>
+                <span id="creatorVideosVal" class="creator-stat-num num">0</span>
+              </div>
+              <div class="creator-stat-cell">
+                <span class="creator-stat-label">Following</span>
+                <span id="creatorFollowingVal" class="creator-stat-num num">0</span>
+              </div>
+            </div>
+
+            <div class="creator-actions-row">
+              <button type="button" class="btn btn-sm btn-primary" id="creatorAuditSampleBtn" style="display: none;">
+                Audit Sample Video (1 Post)
+              </button>
+              <button type="button" class="btn btn-sm" id="creatorSwitchUrlBtn">
+                Paste Video URLs
+              </button>
+              <a id="creatorProfileExternalLink" href="#" target="_blank" rel="noopener noreferrer" class="btn btn-sm">
+                Open TikTok Profile ↗
+              </a>
+            </div>
+          </div>
+
           <!-- Toolstrip: Filtering and Sorting -->
           <div class="toolstrip">
             <div class="filter-group">
@@ -655,6 +703,84 @@ https://www.tiktok.com/@tokopedia/video/7346129847192839102</textarea>
       }
     }
 
+    function renderCreatorCard(data) {
+      if (!data) return;
+      const card = document.getElementById('creatorProfileCard');
+      if (!card) return;
+
+      const avatarImg = document.getElementById('creatorAvatarImg');
+      const nicknameEl = document.getElementById('creatorNickname');
+      const handleEl = document.getElementById('creatorHandle');
+      const badgeEl = document.getElementById('creatorBadge');
+      const bioEl = document.getElementById('creatorBio');
+      const followersEl = document.getElementById('creatorFollowersVal');
+      const likesEl = document.getElementById('creatorLikesVal');
+      const videosEl = document.getElementById('creatorVideosVal');
+      const followingEl = document.getElementById('creatorFollowingVal');
+      const auditSampleBtn = document.getElementById('creatorAuditSampleBtn');
+      const extLink = document.getElementById('creatorProfileExternalLink');
+
+      if (avatarImg) {
+        avatarImg.src = data.avatar || '/brand/sorot-icon.png';
+        avatarImg.onerror = () => { avatarImg.src = '/brand/sorot-icon.png'; };
+        avatarImg.alt = data.nickname || data.username || 'Creator Avatar';
+      }
+      if (nicknameEl) nicknameEl.textContent = data.nickname || data.username || 'TikTok Creator';
+      if (handleEl) handleEl.textContent = `@${data.username || ''}`;
+
+      if (badgeEl) {
+        if (data.category || data.isSeller) {
+          badgeEl.style.display = 'inline-flex';
+          badgeEl.textContent = data.category ? `Shop Seller (${data.category})` : 'Verified Seller';
+          badgeEl.className = 'pill-badge pill-viral';
+        } else if (data.verified) {
+          badgeEl.style.display = 'inline-flex';
+          badgeEl.textContent = 'Verified Creator';
+          badgeEl.className = 'pill-badge pill-standard';
+        } else {
+          badgeEl.style.display = 'none';
+        }
+      }
+
+      if (bioEl) {
+        bioEl.textContent = data.signature || (data.description ? data.description.slice(0, 120) : 'TikTok Creator Profile');
+      }
+
+      const formatNum = (n) => {
+        const num = Number(n) || 0;
+        if (num >= 1000000) return (num / 1000000).toFixed(1) + 'M';
+        if (num >= 1000) return (num / 1000).toFixed(1) + 'K';
+        return num.toLocaleString();
+      };
+
+      if (followersEl) followersEl.textContent = formatNum(data.followerCount || data.followers);
+      if (likesEl) likesEl.textContent = formatNum(data.heartCount || data['like-account'] || 0);
+      if (videosEl) videosEl.textContent = formatNum(data.videoCount || data['video-count'] || 0);
+      if (followingEl) followingEl.textContent = formatNum(data.followingCount || data.following || 0);
+
+      if (extLink) {
+        extLink.href = data.profileUrl || `https://www.tiktok.com/@${data.username}`;
+      }
+
+      if (auditSampleBtn) {
+        const sampleList = data.sampleVideos || (data.videoUrls && data.videoUrls.length > 0 ? data.videoUrls : []);
+        if (sampleList && sampleList.length > 0) {
+          auditSampleBtn.style.display = 'inline-flex';
+          auditSampleBtn.textContent = `Audit Sample Video (${sampleList.length} Post)`;
+          auditSampleBtn.onclick = () => {
+            document.getElementById('modeUrlBtn').click();
+            const urlInput = document.getElementById('urlInput');
+            urlInput.value = sampleList.join('\n');
+            document.getElementById('runScrapeBtn').click();
+          };
+        } else {
+          auditSampleBtn.style.display = 'none';
+        }
+      }
+
+      card.style.display = 'block';
+    }
+
     function renderLedger() {
       const tbody = document.getElementById('tableBody');
       const valid = sessionData.filter(d => !d.error);
@@ -687,6 +813,22 @@ https://www.tiktok.com/@tokopedia/video/7346129847192839102</textarea>
 
         analyzeHookIntelligence(valid);
         analyzeAudioLeverage(valid);
+
+        if (valid[0].authorUniqueId) {
+          const first = valid[0];
+          renderCreatorCard({
+            username: first.authorUniqueId,
+            nickname: first.authorNickname || first.authorUniqueId,
+            avatar: first.authorAvatar || '',
+            signature: first.authorSignature || '',
+            followerCount: first.followers || 0,
+            heartCount: first['like-account'] || 0,
+            videoCount: first['video-count'] || 0,
+            followingCount: first.following || 0,
+            profileUrl: `https://www.tiktok.com/@${first.authorUniqueId}`,
+            sampleVideos: []
+          });
+        }
       } else {
         document.getElementById('averageViews').textContent = '0';
         document.getElementById('averageER').textContent = '0.00%';
@@ -959,10 +1101,22 @@ https://www.tiktok.com/@tokopedia/video/7346129847192839102</textarea>
           const profileData = await res.json();
 
           if (profileData.error) throw new Error(profileData.error);
+
+          renderCreatorCard(profileData);
+
+          if (profileData.isRestrictedList) {
+            if (profileData.hasSampleVideos) {
+              showNotice(`Profil @${profileData.username} berhasil diverifikasi (${(profileData.followerCount || 0).toLocaleString()} followers, ${(profileData.videoCount || 0).toLocaleString()} video). TikTok membatasi crawling feed video publik tanpa login: klik tombol "Audit Sample Video" di atas atau tempel link video spesifik.`, 'info');
+            } else {
+              showNotice(`Profil @${profileData.username} berhasil diverifikasi (${(profileData.followerCount || 0).toLocaleString()} followers, ${(profileData.videoCount || 0).toLocaleString()} video). TikTok membatasi feed video tanpa login: silakan tempel link video spesifik di tab Video URLs.`, 'info');
+            }
+            return;
+          }
+
           const urls = profileData.videoUrls || [];
 
           if (urls.length === 0) {
-            showNotice(`Profile @${profileData.username} reached (${(profileData.followerCount || 0).toLocaleString()} followers). TikTok restricted anonymous profile video lists — please paste direct video URLs in the Video URLs tab.`, 'info');
+            showNotice(`Profil @${profileData.username} terverifikasi. Tidak ada video yang ditemukan. Silakan tempel link video spesifik di tab Video URLs.`, 'info');
             return;
           }
 
@@ -1178,9 +1332,20 @@ https://www.tiktok.com/@tokopedia/video/7346129847192839102</textarea>
         selectedForCompare.clear();
         localStorage.removeItem('sorotSession');
         localStorage.removeItem('tiktokSightSession');
+        const card = document.getElementById('creatorProfileCard');
+        if (card) card.style.display = 'none';
         renderLedger();
       }
     });
+
+    const creatorSwitchBtn = document.getElementById('creatorSwitchUrlBtn');
+    if (creatorSwitchBtn) {
+      creatorSwitchBtn.addEventListener('click', () => {
+        document.getElementById('modeUrlBtn').click();
+        const urlInput = document.getElementById('urlInput');
+        urlInput.focus();
+      });
+    }
 
     // Filter pills event handling
     document.querySelectorAll('.filter-pill').forEach(pill => {

@@ -26,7 +26,7 @@ async function getTikTokData(url) {
     }
     
     browser = await puppeteer.connect({ 
-      browserWSEndpoint: BROWSERLESS_WS,
+      browserWSEndpoint: `${BROWSERLESS_WS}&stealth=true`,
       timeout: 90000 // Increase timeout to 90 seconds
     });
     console.log('Successfully connected to Browserless');
@@ -105,7 +105,12 @@ async function getTikTokData(url) {
           friends: authorStats.friendCount || 0,
           isAD: itemStruct.isAd || false,
           title: itemStruct.desc || shareMeta.title || '',
-          description: shareMeta.desc || itemStruct.desc || ''
+          description: shareMeta.desc || itemStruct.desc || '',
+          authorUniqueId: author.uniqueId || '',
+          authorNickname: author.nickname || '',
+          authorAvatar: author.avatarLarger || author.avatarMedium || author.avatarThumb || '',
+          authorSignature: author.signature || '',
+          authorVerified: Boolean(author.verified)
         };
       } catch (e) {
         return { error: "Failed to parse video item: " + e.message };
@@ -130,6 +135,31 @@ async function getTikTokData(url) {
   }
 }
 
+// Normalizes TikTok video URLs and accepts bare video IDs
+function normalizeTikTokUrl(rawUrl) {
+  if (!rawUrl || typeof rawUrl !== 'string') return '';
+  const trimmed = rawUrl.trim();
+  if (/^\d{15,22}$/.test(trimmed)) {
+    return `https://www.tiktok.com/@creator/video/${trimmed}`;
+  }
+  if (trimmed.startsWith('tiktok.com') || trimmed.startsWith('www.tiktok.com')) {
+    return `https://${trimmed}`;
+  }
+  return trimmed;
+}
+
+const KNOWN_CREATOR_SAMPLES = {
+  'mineralbotanica': [
+    'https://www.tiktok.com/@mineralbotanica/video/7703890519725739285'
+  ],
+  'aerostreet': [
+    'https://www.tiktok.com/@aerostreet/video/7345812901928374829'
+  ],
+  'tokopedia': [
+    'https://www.tiktok.com/@tokopedia/video/7346129847192839102'
+  ]
+};
+
 // Extract latest video links from creator profile
 async function getTikTokUserVideos(username) {
   let browser;
@@ -150,7 +180,7 @@ async function getTikTokUserVideos(username) {
     }
 
     browser = await puppeteer.connect({
-      browserWSEndpoint: BROWSERLESS_WS,
+      browserWSEndpoint: `${BROWSERLESS_WS}&stealth=true`,
       timeout: 45000
     });
 
@@ -169,6 +199,7 @@ async function getTikTokUserVideos(username) {
 
     const profileData = await page.evaluate((uname) => {
       let stats = {};
+      let statsV2 = {};
       let user = {};
 
       const universalScript = document.getElementById('__UNIVERSAL_DATA_FOR_REHYDRATION__');
@@ -178,6 +209,7 @@ async function getTikTokUserVideos(username) {
           const detail = json?.['__DEFAULT_SCOPE__']?.['webapp.user-detail'] || {};
           const userInfo = detail.userInfo || {};
           stats = userInfo.stats || {};
+          statsV2 = userInfo.statsV2 || {};
           user = userInfo.user || {};
         } catch (e) {}
       }
@@ -188,22 +220,43 @@ async function getTikTokUserVideos(username) {
 
       return {
         nickname: user.nickname || uname,
-        followerCount: stats.followerCount || 0,
-        heartCount: stats.heartCount || stats.heart || 0,
-        videoCount: stats.videoCount || 0,
+        avatar: user.avatarLarger || user.avatarMedium || user.avatarThumb || '',
+        signature: user.signature || '',
+        verified: Boolean(user.verified),
+        category: user.commerceUserInfo?.category || '',
+        isSeller: Boolean(user.ttSeller || user.commerceUserInfo?.commerceUser),
+        bioLink: user.bioLink?.link || '',
+        followerCount: Number(statsV2.followerCount || stats.followerCount || 0),
+        heartCount: Number(statsV2.heartCount || stats.heartCount || stats.heart || 0),
+        videoCount: Number(statsV2.videoCount || stats.videoCount || 0),
+        followingCount: Number(statsV2.followingCount || stats.followingCount || 0),
         videoUrls: unique
       };
     }, cleanUser);
 
     await page.close();
+
+    const sampleVideos = KNOWN_CREATOR_SAMPLES[cleanUser.toLowerCase()] || [];
+    const finalUrls = profileData.videoUrls.length > 0 ? profileData.videoUrls : sampleVideos;
+
     return {
       username: cleanUser,
       profileUrl,
       nickname: profileData.nickname,
+      avatar: profileData.avatar,
+      signature: profileData.signature,
+      verified: profileData.verified,
+      category: profileData.category,
+      isSeller: profileData.isSeller,
+      bioLink: profileData.bioLink,
       followerCount: profileData.followerCount,
       heartCount: profileData.heartCount,
       videoCount: profileData.videoCount,
-      videoUrls: profileData.videoUrls
+      followingCount: profileData.followingCount,
+      videoUrls: finalUrls,
+      sampleVideos,
+      hasSampleVideos: sampleVideos.length > 0,
+      isRestrictedList: profileData.videoUrls.length === 0
     };
   } catch (err) {
     console.error('Error extracting profile videos:', err);
@@ -256,8 +309,9 @@ module.exports = async (req, res) => {
       return res.status(400).json({ error: "Invalid request, missing urls or username" });
     }
     
-    console.log('Processing URLs:', urls);
-    const results = await Promise.all(urls.map(getTikTokData));
+    const cleanedUrls = urls.map(normalizeTikTokUrl).filter(u => u.length > 0);
+    console.log('Processing URLs:', cleanedUrls);
+    const results = await Promise.all(cleanedUrls.map(getTikTokData));
     console.log('Results processed successfully');
     
     return res.status(200).json(results);

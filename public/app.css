@@ -187,7 +187,7 @@ body {
 
 @media (max-width: 56rem) {
   .grid-workbench {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
   }
 }
 
@@ -468,6 +468,115 @@ body {
   font-weight: 600;
   color: var(--color-ink);
   margin-top: var(--space-3xs);
+}
+
+/* Creator Profile Intelligence Card */
+.creator-card {
+  padding: var(--space-md);
+  margin: var(--space-xs) var(--space-md);
+  background: var(--color-paper-2);
+  border: var(--rule-hair) solid var(--color-rule);
+  border-radius: var(--radius-card);
+}
+
+.creator-card-main {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+}
+
+.creator-avatar-wrap {
+  position: relative;
+  flex-shrink: 0;
+}
+
+.creator-avatar {
+  width: 56px;
+  height: 56px;
+  border-radius: var(--radius-full);
+  object-fit: cover;
+  border: 2px solid var(--color-accent-edge);
+  background: var(--color-paper);
+}
+
+.creator-meta {
+  flex: 1;
+  min-width: 0;
+}
+
+.creator-title-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+  flex-wrap: wrap;
+}
+
+.creator-name {
+  font-family: var(--font-display);
+  font-size: var(--text-base);
+  font-weight: 700;
+  color: var(--color-ink);
+  line-height: 1.2;
+}
+
+.creator-handle {
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  color: var(--color-muted);
+}
+
+.creator-bio {
+  font-size: var(--text-xs);
+  color: var(--color-muted);
+  margin-top: var(--space-3xs);
+  line-height: 1.4;
+  white-space: pre-line;
+  max-height: 3.2em;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.creator-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: var(--space-xs);
+  margin-top: var(--space-sm);
+  padding-top: var(--space-sm);
+  border-top: var(--rule-hair) solid var(--color-rule);
+}
+
+@media (max-width: 40rem) {
+  .creator-stats-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+.creator-stat-cell {
+  background: var(--color-paper);
+  border: var(--rule-hair) solid var(--color-rule);
+  border-radius: var(--radius-input);
+  padding: var(--space-2xs) var(--space-xs);
+}
+
+.creator-stat-label {
+  display: block;
+  font-size: 0.6875rem;
+  color: var(--color-muted);
+}
+
+.creator-stat-num {
+  font-size: var(--text-sm);
+  font-weight: 700;
+  color: var(--color-ink);
+  margin-top: var(--space-3xs);
+}
+
+.creator-actions-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+  margin-top: var(--space-sm);
+  flex-wrap: wrap;
 }
 
 /* Filter and Sorter Toolstrip */
