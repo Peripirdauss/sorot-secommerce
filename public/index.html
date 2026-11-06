@@ -77,7 +77,10 @@
         <section class="panel">
           <div class="panel-header">
             <h2 class="panel-title">Batch Ingestion</h2>
-            <span class="pill-badge pill-standard" id="batchBadge">Idle</span>
+            <div style="display: flex; gap: var(--space-xs); align-items: center;">
+              <span class="pill-badge pill-standard" id="poolHealthBadge" title="Browserless Multi-Token Pool Status">Engine: Checking...</span>
+              <span class="pill-badge pill-standard" id="batchBadge">Idle</span>
+            </div>
           </div>
           <div class="panel-body">
 
@@ -1406,6 +1409,7 @@ https://www.tiktok.com/@tokopedia/video/7346129847192839102</textarea>
           setTimeout(() => { track.style.display = 'none'; }, 1000);
           localStorage.setItem('sorotSession', JSON.stringify(sessionData));
           renderLedger();
+          checkPoolHealth();
         }
 
       } else {
@@ -1462,6 +1466,7 @@ https://www.tiktok.com/@tokopedia/video/7346129847192839102</textarea>
           setTimeout(() => { track.style.display = 'none'; }, 1000);
           localStorage.setItem('sorotSession', JSON.stringify(sessionData));
           renderLedger();
+          checkPoolHealth();
         }
       }
     }
@@ -1570,20 +1575,29 @@ https://www.tiktok.com/@tokopedia/video/7346129847192839102</textarea>
 
       // 3. Render Technical Telemetry
       const grid = document.getElementById('modalGrid');
+      const poolNodeText = item._poolMeta?.nodeId
+        ? `${escapeHtml(item._poolMeta.nodeId)} (${escapeHtml(item._poolMeta.maskedToken || '')})`
+        : 'Active Pool Node';
+      const failoverBadge = (item._poolMeta?.totalFailovers > 0)
+        ? `<span class="pill-badge pill-passive">Auto-Recovered (${item._poolMeta.totalFailovers} failover)</span>`
+        : `<span class="pill-badge pill-viral">Direct (0 failover)</span>`;
+
       grid.innerHTML = `
-        <div class="inspector-item"><span class="inspector-key">Video ID</span><span class="inspector-val">${escapeHtml(item.videoId || '—')}</span></div>
+        <div class="inspector-item"><span class="inspector-key">Video ID</span><span class="inspector-val">${escapeHtml(item.videoId || '-')}</span></div>
         <div class="inspector-item"><span class="inspector-key">Intent Archetype</span><span class="inspector-val"><span class="pill-badge ${stats.archetypeClass}">${stats.archetype}</span></span></div>
         <div class="inspector-item"><span class="inspector-key">Hook Formula</span><span class="inspector-val"><span class="pill-badge ${stats.hookInfo.pillClass}">${stats.hookInfo.label}</span></span></div>
-        <div class="inspector-item"><span class="inspector-key">Created Date</span><span class="inspector-val">${escapeHtml(item.createdTime || '—')}</span></div>
-        <div class="inspector-item"><span class="inspector-key">Duration</span><span class="inspector-val">${item.duration ? item.duration + 's' : '—'}</span></div>
+        <div class="inspector-item"><span class="inspector-key">Browserless Worker</span><span class="inspector-val">${poolNodeText}</span></div>
+        <div class="inspector-item"><span class="inspector-key">Failover State</span><span class="inspector-val">${failoverBadge}</span></div>
+        <div class="inspector-item"><span class="inspector-key">Created Date</span><span class="inspector-val">${escapeHtml(item.createdTime || '-')}</span></div>
+        <div class="inspector-item"><span class="inspector-key">Duration</span><span class="inspector-val">${item.duration ? item.duration + 's' : '-'}</span></div>
         <div class="inspector-item"><span class="inspector-key">Is Sponsored (Ad)</span><span class="inspector-val">${item.isAD ? 'Yes' : 'No'}</span></div>
-        <div class="inspector-item"><span class="inspector-key">Sound Title</span><span class="inspector-val">${escapeHtml(item.sound || '—')}</span></div>
-        <div class="inspector-item"><span class="inspector-key">Music ID</span><span class="inspector-val">${escapeHtml(item.musicId || '—')}</span></div>
+        <div class="inspector-item"><span class="inspector-key">Sound Title</span><span class="inspector-val">${escapeHtml(item.sound || '-')}</span></div>
+        <div class="inspector-item"><span class="inspector-key">Music ID</span><span class="inspector-val">${escapeHtml(item.musicId || '-')}</span></div>
         <div class="inspector-item"><span class="inspector-key">Likes / Saves / Shares</span><span class="inspector-val">${formatCount(item.like)} / ${formatCount(item.saves)} / ${formatCount(item.share)}</span></div>
         <div class="inspector-item"><span class="inspector-key">Comments</span><span class="inspector-val">${formatCount(item.comments)}</span></div>
         <div class="inspector-item"><span class="inspector-key">Author Followers</span><span class="inspector-val">${formatCount(item.followers)}</span></div>
         <div class="inspector-item"><span class="inspector-key">Author Total Likes</span><span class="inspector-val">${formatCount(item['like-account'])}</span></div>
-        <div class="inspector-item" style="grid-column: 1 / -1;"><span class="inspector-key">Caption Description</span><span class="inspector-val">${escapeHtml(item.description || item.title || '—')}</span></div>
+        <div class="inspector-item" style="grid-column: 1 / -1;"><span class="inspector-key">Caption Description</span><span class="inspector-val">${escapeHtml(item.description || item.title || '-')}</span></div>
       `;
 
       document.getElementById('detailModal').style.display = 'grid';
@@ -1732,8 +1746,26 @@ https://www.tiktok.com/@tokopedia/video/7346129847192839102</textarea>
       if (e.target.id === 'battleModal') closeBattleModal();
     });
 
+    async function checkPoolHealth() {
+      try {
+        const res = await fetch('/api?health=true');
+        const data = await res.json();
+        const badge = document.getElementById('poolHealthBadge');
+        if (badge && data && data.poolSize !== undefined) {
+          const healthy = data.healthyNodes ?? 0;
+          const total = data.poolSize ?? 0;
+          badge.textContent = `Engine: ${healthy}/${total} Nodes`;
+          badge.className = healthy > 0 ? 'pill-badge pill-viral' : 'pill-badge pill-underperforming';
+          badge.title = `Browserless Pool: ${healthy} ready, ${data.coolingDownNodes || 0} cooling down. Tokens: ${(data.nodes || []).map(n => n.maskedToken).join(', ')}`;
+        }
+      } catch (e) {
+        console.warn('Could not query pool health:', e);
+      }
+    }
+
     // Initial restore on load: always ensure data is active immediately
     window.addEventListener('DOMContentLoaded', () => {
+      checkPoolHealth();
       const saved = localStorage.getItem('sorotSession') || localStorage.getItem('tiktokSightSession');
       let restored = false;
       if (saved) {
