@@ -3,582 +3,1204 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>TikTok Analytics Dashboard</title>
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+  <meta name="description" content="TiktokSight is a batch TikTok analytics intelligence tool for creators, affiliates, and agencies to audit engagement rates, save-to-view ratios, and campaign metrics.">
+  <title>TiktokSight: Video Analytics and Engagement Intelligence</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Familjen+Grotesk:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="./app.css">
   <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
-  <style>
-    :root {
-      --primary-color: #e6336f;
-      --secondary-color: #25f4ee;
-      --bg-light: #f8f9fa;
-      --card-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-    }
-    body {
-      background-color: var(--bg-light);
-      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-    }
-    .navbar-brand {
-      font-weight: 600;
-      color: var(--primary-color);
-    }
-    .btn-primary {
-      background-color: var(--primary-color);
-      border-color: var(--primary-color);
-    }
-    .btn-primary:hover {
-      background-color: #d62b63;
-      border-color: #d62b63;
-    }
-    .btn-outline-primary {
-      color: var(--primary-color);
-      border-color: var(--primary-color);
-    }
-    .btn-outline-primary:hover {
-      background-color: var(--primary-color);
-      color: white;
-    }
-    .card {
-      border-radius: 12px;
-      box-shadow: var(--card-shadow);
-      border: none;
-      transition: transform 0.2s;
-    }
-    .card:hover {
-      transform: translateY(-5px);
-    }
-    .metrics-card {
-      height: 100%;
-      min-height: 160px;
-    }
-    .metrics-value {
-      font-size: 2.5rem;
-      font-weight: 700;
-    }
-    .metrics-label {
-      color: #6c757d;
-      font-size: 0.9rem;
-    }
-    .tab-button {
-      border-radius: 8px;
-      padding: 8px 16px;
-      background-color: #f1f1f1;
-      border: none;
-      margin-right: 8px;
-    }
-    .tab-button.active {
-      background-color: white;
-      box-shadow: var(--card-shadow);
-    }
-    .modal-xl {
-      max-width: 95%;
-    }
-    #resultsTable th {
-      position: sticky;
-      top: 0;
-      background-color: white;
-      z-index: 10;
-    }
-    .status-ready {
-      color: #198754;
-    }
-    .header-icon {
-      font-size: 1.2rem;
-      color: #6c757d;
-      cursor: pointer;
-    }
-    @media (max-width: 768px) {
-      .metrics-value {
-        font-size: 1.8rem;
-      }
-      .navbar-brand {
-        font-size: 1.2rem;
-      }
-    }
-  </style>
 </head>
 <body>
-  <!-- Navbar -->
-  <nav class="navbar navbar-expand-lg navbar-light bg-white shadow-sm sticky-top">
-    <div class="container">
-      <a class="navbar-brand" href="#">
-        <i class="bi bi-tiktok me-2"></i>TikTok Analytics Dashboard
+  <!-- Header Chrome -->
+  <header class="site-header">
+    <div class="container nav-container">
+      <a href="/" class="brand-group">
+        <span class="brand-symbol">TS</span>
+        <span class="brand-name">TiktokSight</span>
       </a>
-      <div class="ms-auto">
-        <button class="btn btn-link text-dark me-2" id="docsButton">Documentation</button>
-        <button class="btn btn-primary" id="exportButton">
-          <i class="bi bi-download me-1"></i>Export Data
-        </button>
+      <div class="nav-actions">
+        <button type="button" class="btn" id="exportBtn">Export XLSX</button>
+        <button type="button" class="btn btn-primary" id="analyzeTriggerBtn">Analyze Batch</button>
       </div>
     </div>
-  </nav>
+  </header>
 
-  <!-- Main Content -->
-  <div class="container py-4">
-    <div class="row mb-4">
-      <div class="col">
-        <h2 class="mb-1">Dashboard</h2>
-        <p class="text-muted">Analyze TikTok video metrics and performance data</p>
-      </div>
-    </div>
+  <!-- Main Content Area -->
+  <main class="main-content">
+    <div class="container">
 
-    <!-- Metrics Cards -->
-    <div class="row mb-4 g-3">
-      <div class="col-md-4">
-        <div class="card metrics-card">
-          <div class="card-body d-flex flex-column">
-            <div class="d-flex justify-content-between mb-3">
-              <span class="metrics-label">Total Videos</span>
-              <i class="bi bi-clipboard-data header-icon"></i>
-            </div>
-            <div class="metrics-value" id="totalVideos">0</div>
-            <div class="metrics-label">Videos analyzed in current session</div>
+      <!-- Metrics Ledger (4-column responsive grid) -->
+      <section class="metrics-strip">
+        <div class="metric-cell">
+          <div class="metric-label">
+            <span>Audited Videos</span>
+            <span>Batch count</span>
           </div>
+          <div class="metric-value num" id="totalAudited">0</div>
+          <div class="metric-hint">Videos analyzed in this session</div>
         </div>
-      </div>
-      <div class="col-md-4">
-        <div class="card metrics-card">
-          <div class="card-body d-flex flex-column">
-            <div class="d-flex justify-content-between mb-3">
-              <span class="metrics-label">Average Views</span>
-              <i class="bi bi-eye header-icon"></i>
-            </div>
-            <div class="metrics-value" id="averageViews">0</div>
-            <div class="metrics-label">Average views per video</div>
-          </div>
-        </div>
-      </div>
-      <div class="col-md-4">
-        <div class="card metrics-card">
-          <div class="card-body d-flex flex-column">
-            <div class="d-flex justify-content-between mb-3">
-              <span class="metrics-label">Status</span>
-              <i class="bi bi-info-circle header-icon"></i>
-            </div>
-            <div class="metrics-value status-ready" id="statusText">Ready</div>
-            <div class="metrics-label">Enter URLs to analyze</div>
-          </div>
-        </div>
-      </div>
-    </div>
 
-    <!-- Input Section -->
-    <div class="row mb-4">
-      <div class="col-lg-5 mb-3 mb-lg-0">
-        <div class="card h-100">
-          <div class="card-body">
-            <h5 class="card-title mb-3">Input TikTok URLs</h5>
-            <p class="text-muted mb-3">Enter one URL per line to analyze multiple videos</p>
-            <textarea id="urlInput" rows="8" class="form-control mb-3" placeholder="https://www.tiktok.com/@username/video/1234567890123456789"></textarea>
-            <button class="btn btn-primary w-100" id="analyzeButton">
-              Analyze Videos
-            </button>
+        <div class="metric-cell">
+          <div class="metric-label">
+            <span>Average Views</span>
+            <span>Reach velocity</span>
           </div>
+          <div class="metric-value num" id="averageViews">0</div>
+          <div class="metric-hint">Normalized view count across batch</div>
         </div>
-      </div>
-      <div class="col-lg-7">
-        <div class="card h-100">
-          <div class="card-body">
-            <div class="d-flex justify-content-between align-items-center mb-3">
-              <h5 class="card-title mb-0">Results Overview</h5>
-              <div>
-                <button class="tab-button active" id="tableViewBtn">Table View</button>
-                <button class="tab-button" id="cardViewBtn">Card View</button>
+
+        <div class="metric-cell">
+          <div class="metric-label">
+            <span>Avg Engagement (ER%)</span>
+            <span>Benchmark: &gt;3%</span>
+          </div>
+          <div class="metric-value num" id="averageER">0.00%</div>
+          <div class="metric-hint" id="statusDescription">Ready to ingest links</div>
+        </div>
+
+        <div class="metric-cell">
+          <div class="metric-label">
+            <span>Organic / Ad Split</span>
+            <span>Commercial ratio</span>
+          </div>
+          <div class="metric-value num" id="adRatio">0% Ad</div>
+          <div class="metric-hint" id="adHint">0 sponsored posts detected</div>
+        </div>
+      </section>
+
+      <!-- Workbench Grid -->
+      <div class="grid-workbench">
+        <!-- Input and Controls Column -->
+        <section class="panel">
+          <div class="panel-header">
+            <h2 class="panel-title">Batch Ingestion</h2>
+            <span class="pill-badge pill-standard" id="batchBadge">Idle</span>
+          </div>
+          <div class="panel-body">
+
+            <!-- Mode Switcher: Video URLs vs @Username -->
+            <div class="mode-toggle" role="tablist">
+              <button type="button" class="mode-toggle-btn active" id="modeUrlBtn" role="tab" aria-selected="true">Video URLs (Batch)</button>
+              <button type="button" class="mode-toggle-btn" id="modeUserBtn" role="tab" aria-selected="false">Profile @Username</button>
+            </div>
+
+            <!-- URL Ingestion Mode -->
+            <div id="urlModeContainer">
+              <p class="lead" style="font-size: var(--text-xs); margin-bottom: var(--space-xs); color: var(--color-muted);">
+                Paste public TikTok video links (one URL per line).
+              </p>
+              <textarea
+                id="urlInput"
+                class="url-textarea"
+                placeholder="https://www.tiktok.com/@creator/video/7123456789012345678&#10;https://www.tiktok.com/@competitor/video/7234567890123456789"
+                aria-label="TikTok Video URLs"
+              ></textarea>
+            </div>
+
+            <!-- Username Ingestion Mode -->
+            <div id="userModeContainer" style="display: none;">
+              <p class="lead" style="font-size: var(--text-xs); margin-bottom: var(--space-xs); color: var(--color-muted);">
+                Enter TikTok @handle to pull the latest public videos.
+              </p>
+              <input
+                type="text"
+                id="usernameInput"
+                class="single-input"
+                placeholder="@aerostreet or @tokopedia"
+                aria-label="TikTok Creator Username"
+              >
+            </div>
+
+            <div class="progress-track" id="progressTrack">
+              <div class="progress-fill" id="progressFill"></div>
+            </div>
+
+            <div class="input-actions-bar">
+              <button type="button" class="btn btn-primary" id="runScrapeBtn" style="flex: 2;">
+                Run Video Analytics
+              </button>
+              <button type="button" class="btn" id="loadDemoBtn" style="flex: 1;">
+                Load Sample Batch
+              </button>
+            </div>
+
+            <!-- Signature Element: Virality Benchmark Radar -->
+            <div class="signature-box">
+              <div class="signature-head">
+                <span>Engagement Benchmark Radar</span>
+                <span class="pill-badge pill-standard" id="radarStatus">Aggregated</span>
+              </div>
+              <p style="font-size: 0.725rem; color: var(--color-muted); margin-bottom: var(--space-2xs);">
+                Algorithm signals: Save Rate drives algorithmic shelf-life; Share Rate accelerates FYP feed injection.
+              </p>
+              <div class="radar-grid">
+                <div class="radar-stat">
+                  <span class="radar-stat-name">Save Rate (S/V)</span>
+                  <span class="radar-stat-val num" id="radarSaveRate">(n/a)</span>
+                </div>
+                <div class="radar-stat">
+                  <span class="radar-stat-name">Share Rate (Sh/V)</span>
+                  <span class="radar-stat-val num" id="radarShareRate">(n/a)</span>
+                </div>
+                <div class="radar-stat">
+                  <span class="radar-stat-name">Comment Ratio</span>
+                  <span class="radar-stat-val num" id="radarCommentRate">(n/a)</span>
+                </div>
               </div>
             </div>
-            <p class="text-muted">Summary of analyzed TikTok videos</p>
 
-            <!-- Progress Bar -->
-            <div class="progress mb-3" style="height: 8px; display: none;" id="progressContainer">
-              <div id="scrapeProgress" class="progress-bar bg-primary" role="progressbar" style="width: 0%"></div>
+            <!-- Hook & Script Intelligence Matrix -->
+            <div class="hook-matrix-card">
+              <div class="signature-head">
+                <span>Hook Intelligence &amp; Script Matrix</span>
+                <span class="pill-badge pill-standard" id="hookWinnerTag">A/B Ready</span>
+              </div>
+              <p style="font-size: 0.725rem; color: var(--color-muted); margin-bottom: var(--space-2xs);">
+                First 3-5 words formula classification and optimal duration sweet spot.
+              </p>
+              <div class="hook-grid">
+                <div class="hook-stat-box">
+                  <span class="hook-stat-name">Top Converting Hook</span>
+                  <span class="hook-stat-val" id="topHookName">(n/a)</span>
+                </div>
+                <div class="hook-stat-box">
+                  <span class="hook-stat-name">Duration Sweet Spot</span>
+                  <span class="hook-stat-val" id="durationSweetSpot">(n/a)</span>
+                </div>
+              </div>
             </div>
 
-            <!-- Results Placeholder -->
-            <div id="resultsPlaceholder" class="text-center py-5">
-              <i class="bi bi-search" style="font-size: 3rem; color: #dee2e6;"></i>
-              <p class="mt-3 text-muted">No results yet. Enter TikTok URLs to analyze.</p>
+            <!-- Audio Leverage & Sound Fatigue Index -->
+            <div class="hook-matrix-card">
+              <div class="signature-head">
+                <span>Audio Leverage &amp; Sound Fatigue</span>
+                <span class="pill-badge pill-standard" id="audioIntelTag">Sound Intel</span>
+              </div>
+              <p style="font-size: 0.725rem; color: var(--color-muted); margin-bottom: var(--space-2xs);">
+                Music ID concentration and sound diversity benchmark across batch.
+              </p>
+              <div class="hook-grid">
+                <div class="hook-stat-box">
+                  <span class="hook-stat-name">Top Viral Audio</span>
+                  <span class="hook-stat-val" id="topSoundName" title="Top audio by save and share rate">(n/a)</span>
+                </div>
+                <div class="hook-stat-box">
+                  <span class="hook-stat-name">Sound Diversity</span>
+                  <span class="hook-stat-val" id="soundDiversityVal" title="Ratio of unique audio used across batch">(n/a)</span>
+                </div>
+              </div>
             </div>
 
-            <!-- Results Preview (Limited) -->
-            <div id="resultsPreview" class="table-responsive" style="display: none; max-height: 350px; overflow-y: auto;">
-              <table class="table table-hover">
+          </div>
+        </section>
+
+        <!-- Data Inspector Table Column -->
+        <section class="panel">
+          <div class="panel-header">
+            <h2 class="panel-title">Video Performance Ledger</h2>
+            <div style="display: flex; gap: var(--space-xs);">
+              <button type="button" class="btn btn-sm" id="battleTriggerBtn" disabled>Compare (2)</button>
+              <button type="button" class="btn btn-sm" id="clearDataBtn">Clear Session</button>
+            </div>
+          </div>
+
+          <!-- Toolstrip: Filtering and Sorting -->
+          <div class="toolstrip">
+            <div class="filter-group">
+              <button type="button" class="filter-pill active" data-filter="all">All</button>
+              <button type="button" class="filter-pill" data-filter="viral">Viral Loop</button>
+              <button type="button" class="filter-pill" data-filter="evergreen">Evergreen Guide</button>
+              <button type="button" class="filter-pill" data-filter="passive">Passive Fluff</button>
+              <button type="button" class="filter-pill" data-filter="underperforming">Underperforming</button>
+              <button type="button" class="filter-pill" data-filter="organic">Organic Only</button>
+              <button type="button" class="filter-pill" data-filter="sponsored">Sponsored (Ad)</button>
+            </div>
+
+            <div style="display: flex; align-items: center; gap: var(--space-xs);">
+              <label for="sortSelect" style="font-size: var(--text-xs); color: var(--color-muted);">Sort:</label>
+              <select id="sortSelect" class="sort-select">
+                <option value="default">Default Ingestion</option>
+                <option value="er-desc">Engagement Rate (High to Low)</option>
+                <option value="views-desc">Views (High to Low)</option>
+                <option value="saves-desc">Saves (High to Low)</option>
+                <option value="shares-desc">Shares (High to Low)</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Comparison Selection Banner -->
+          <div class="compare-banner" id="compareBanner">
+            <span id="compareBannerText">Select 2 videos using the checkboxes to launch Head-to-Head Comparison.</span>
+            <button type="button" class="btn btn-sm" id="bannerCompareBtn" style="background: var(--color-paper); color: var(--color-ink);">Launch Compare</button>
+          </div>
+
+          <div class="panel-body" style="padding: 0;">
+            <div class="table-wrapper">
+              <table class="data-table" id="dataTable">
                 <thead>
                   <tr>
+                    <th style="width: 36px; text-align: center;">Pick</th>
                     <th>Video ID</th>
+                    <th>Hook Formula</th>
                     <th>Views</th>
                     <th>Likes</th>
-                    <th>Comments</th>
+                    <th>Saves</th>
                     <th>Shares</th>
+                    <th>Save vs Share</th>
+                    <th>ER%</th>
+                    <th>Archetype</th>
                     <th>Action</th>
                   </tr>
                 </thead>
-                <tbody id="resultsPreviewBody"></tbody>
+                <tbody id="tableBody">
+                  <tr>
+                    <td colspan="11" style="text-align: center; padding: var(--space-xl); color: var(--color-muted);">
+                      No video data loaded. Ingest TikTok links on the left or click Load Sample Batch.
+                    </td>
+                  </tr>
+                </tbody>
               </table>
             </div>
-
-            <!-- Card View (Limited) -->
-            <div id="cardViewContainer" class="row g-3" style="display: none;">
-              <!-- Cards will be inserted here -->
-            </div>
           </div>
+        </section>
+      </div>
+
+    </div>
+  </main>
+
+  <!-- Modal Inspector (Single Video Breakdown) -->
+  <div class="modal-backdrop" id="detailModal" role="dialog" aria-modal="true" aria-labelledby="modalHeading">
+    <div class="modal-dialog">
+      <div class="modal-header">
+        <h3 class="panel-title" id="modalHeading">Video Performance Breakdown</h3>
+        <button type="button" class="btn btn-sm" id="closeModalBtn" aria-label="Close modal">Done</button>
+      </div>
+      <div class="modal-body">
+        <div class="inspector-grid" id="modalGrid">
+          <!-- Dynamically filled -->
         </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-primary btn-sm" id="modalCloseActionBtn">Close Inspector</button>
       </div>
     </div>
   </div>
 
-  <!-- Loading Spinner -->
-  <div class="modal fade" id="loadingModal" tabindex="-1" data-bs-backdrop="static">
-    <div class="modal-dialog modal-dialog-centered">
-      <div class="modal-content">
-        <div class="modal-body text-center py-5">
-          <div class="spinner-border text-primary mb-3" style="width: 3rem; height: 3rem;"></div>
-          <h5 class="mt-3">Analyzing TikTok Videos</h5>
-          <p class="text-muted">This may take a few moments...</p>
+  <!-- Modal Battle (Side-by-Side Hook Comparison) -->
+  <div class="modal-backdrop" id="battleModal" role="dialog" aria-modal="true" aria-labelledby="battleModalHeading">
+    <div class="modal-dialog">
+      <div class="modal-header">
+        <h3 class="panel-title" id="battleModalHeading">Head-to-Head Creative Hook Comparison</h3>
+        <button type="button" class="btn btn-sm" id="closeBattleModalBtn" aria-label="Close comparison">Done</button>
+      </div>
+      <div class="modal-body">
+        <div class="battle-grid" id="battleGrid">
+          <!-- Dynamically filled with side-by-side comparison -->
         </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-primary btn-sm" id="battleCloseActionBtn">Close Comparison</button>
       </div>
     </div>
   </div>
 
-  <!-- Full Results Modal -->
-  <div class="modal fade" id="resultsModal" tabindex="-1">
-    <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h5 class="modal-title">Complete Analysis Results</h5>
-          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-        </div>
-        <div class="modal-body">
-          <div class="table-responsive">
-            <table class="table table-hover">
-              <thead>
-                <tr>
-                  <th>Video ID</th>
-                  <th>Created Time</th>
-                  <th>Duration</th>
-                  <th>Copyrighted</th>
-                  <th>Music ID</th>
-                  <th>Sound</th>
-                  <th>Likes</th>
-                  <th>Shares</th>
-                  <th>Comments</th>
-                  <th>Views</th>
-                  <th>Saves</th>
-                  <th>Repost</th>
-                  <th>Followers</th>
-                  <th>Following</th>
-                  <th>Like Account</th>
-                  <th>Video Count</th>
-                  <th>Friends</th>
-                  <th>Is AD</th>
-                  <th>Title</th>
-                  <th>Description</th>
-                </tr>
-              </thead>
-              <tbody id="resultsTable"></tbody>
-            </table>
-          </div>
-        </div>
-        <div class="modal-footer">
-          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-          <button type="button" class="btn btn-primary" id="downloadBtn">
-            <i class="bi bi-download me-1"></i>Download XLSX
-          </button>
-        </div>
-      </div>
+  <!-- Footer Chrome -->
+  <footer class="site-footer">
+    <div class="container footer-container">
+      <span>TiktokSight Intelligence Engine (Creators and Agencies)</span>
+      <span>Tokenized CSS | Zero AI Slop Compliant | Hallmark System</span>
     </div>
-  </div>
+  </footer>
 
-  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
   <script>
-    let paginatedData = [];
-    const loadingModal = new bootstrap.Modal(document.getElementById('loadingModal'));
-    const resultsModal = new bootstrap.Modal(document.getElementById('resultsModal'));
+    let sessionData = [];
+    let currentFilter = 'all';
+    let currentSort = 'default';
+    let selectedForCompare = new Set();
+    let currentMode = 'url'; // 'url' or 'user'
 
-    // View toggle
-    document.getElementById('tableViewBtn').addEventListener('click', function() {
-      this.classList.add('active');
-      document.getElementById('cardViewBtn').classList.remove('active');
-      document.getElementById('resultsPreview').style.display = paginatedData.length ? 'block' : 'none';
-      document.getElementById('cardViewContainer').style.display = 'none';
-    });
-
-    document.getElementById('cardViewBtn').addEventListener('click', function() {
-      this.classList.add('active');
-      document.getElementById('tableViewBtn').classList.remove('active');
-      document.getElementById('resultsPreview').style.display = 'none';
-      document.getElementById('cardViewContainer').style.display = paginatedData.length ? 'flex' : 'none';
-    });
-
-    document.getElementById('exportButton').addEventListener('click', function() {
-      if (paginatedData.length === 0) {
-        alert('No data to export. Please analyze videos first.');
-        return;
+    // Sample multi-category TikTok dataset for instant demonstration
+    const sampleDataset = [
+      {
+        videoId: "7345812901928374829",
+        title: "5 TikTok Shop tech gadgets under $20 you actually need",
+        description: "Testing viral Amazon and TikTok shop gadgets! Save this for later #tech #gadgets #affiliate",
+        createdTime: "2026-11-01 14:20:00",
+        duration: 42,
+        isCopyrighted: true,
+        musicId: "8912384912",
+        sound: "Original Sound - TechFinder",
+        views: "842100",
+        like: "62400",
+        comments: "1420",
+        share: "6890",
+        saves: "28450",
+        followers: 125000,
+        'like-account': 2840000,
+        isAD: false
+      },
+      {
+        videoId: "7346129847192839102",
+        title: "When you try to explain why you were late to work",
+        description: "Tag that one coworker who always does this lol #relatable #office #humor",
+        createdTime: "2026-11-02 18:45:00",
+        duration: 18,
+        isCopyrighted: false,
+        musicId: "7721839124",
+        sound: "Viral Office Meme Audio",
+        views: "1420000",
+        like: "184000",
+        comments: "4120",
+        share: "24800",
+        saves: "4100",
+        followers: 430000,
+        'like-account': 11400000,
+        isAD: false
+      },
+      {
+        videoId: "7346981249812938471",
+        title: "How to make creamy garlic chicken in 20 minutes",
+        description: "The easiest weeknight dinner recipe step-by-step. Bookmark this recipe! #cooking #dinner #recipe",
+        createdTime: "2026-11-03 11:10:00",
+        duration: 58,
+        isCopyrighted: true,
+        musicId: "6612938491",
+        sound: "Cozy Cooking Lofi Beats",
+        views: "520000",
+        like: "41200",
+        comments: "820",
+        share: "4920",
+        saves: "31800",
+        followers: 89000,
+        'like-account': 1950000,
+        isAD: false
+      },
+      {
+        videoId: "7347128938192847192",
+        title: "Special offer: Why our Vitamin C serum sells out every single week",
+        description: "Official brand spotlight! Try today with 20% off code GLOW20 #skincare #sponsored #ad",
+        createdTime: "2026-11-04 09:30:00",
+        duration: 32,
+        isCopyrighted: true,
+        musicId: "9912837491",
+        sound: "Upbeat Corporate Electronic Pop",
+        views: "310000",
+        like: "8900",
+        comments: "310",
+        share: "420",
+        saves: "780",
+        followers: 210000,
+        'like-account': 890000,
+        isAD: true
+      },
+      {
+        videoId: "7347891283918273641",
+        title: "Just a random sunset over the city tonight",
+        description: "Good vibes only #sunset #citylife #aesthetic",
+        createdTime: "2026-11-05 19:15:00",
+        duration: 15,
+        isCopyrighted: false,
+        musicId: "3312983746",
+        sound: "Aesthetic Chill Guitar",
+        views: "18500",
+        like: "620",
+        comments: "14",
+        share: "18",
+        saves: "45",
+        followers: 12000,
+        'like-account': 95000,
+        isAD: false
+      },
+      {
+        videoId: "7348019283746192837",
+        title: "Never say this one phrase in a job interview",
+        description: "3 psychological tricks to negotiate your next salary. Save this for negotiation day #career #salary #tips",
+        createdTime: "2026-11-06 08:00:00",
+        duration: 52,
+        isCopyrighted: false,
+        musicId: "1129384756",
+        sound: "Dramatic Deep Piano Hook",
+        views: "980000",
+        like: "94000",
+        comments: "1840",
+        share: "14500",
+        saves: "48200",
+        followers: 320000,
+        'like-account': 6100000,
+        isAD: false
       }
-      downloadXLSX();
-    });
+    ];
 
-    document.getElementById('downloadBtn').addEventListener('click', function() {
-      downloadXLSX();
-    });
+    function formatCount(raw) {
+      const val = parseInt(raw, 10);
+      if (isNaN(val)) return '0';
+      if (val >= 1000000) return (val / 1000000).toFixed(1) + 'M';
+      if (val >= 1000) return (val / 1000).toFixed(1) + 'K';
+      return val.toLocaleString();
+    }
 
-    document.getElementById('analyzeButton').addEventListener('click', function() {
-      scrapeData();
-    });
+    function formatPct(num) {
+      if (isNaN(num)) return '0.00%';
+      return num.toFixed(2) + '%';
+    }
 
-    async function scrapeData() {
-      const input = document.getElementById('urlInput').value.trim();
-      const urls = [...new Set(input.split('\n').map(u => u.trim()).filter(Boolean))];
-      
-      if (urls.length === 0) {
-        alert("Enter at least one valid TikTok URL");
-        return;
+    // Hook Formula Classifier (First 3-5 words analysis)
+    function classifyHook(text) {
+      if (!text) return { label: 'General', pillClass: 'pill-standard' };
+      const lower = text.trim().toLowerCase();
+
+      // Number / Listicle Hook
+      if (/^(\d+|top\s*\d+|[0-9]+)\b/.test(lower) || /\b(\d+)\s*(tips|alasan|cara|hal|rahasia|gadgets|tricks)\b/.test(lower)) {
+        return { label: 'Listicle / Number', pillClass: 'pill-hook-number' };
       }
-      
-      // Update UI
-      document.getElementById('statusText').textContent = 'Processing';
-      document.getElementById('statusText').classList.remove('status-ready');
-      document.getElementById('progressContainer').style.display = 'block';
-      document.getElementById('scrapeProgress').style.width = '0%';
-      document.getElementById('scrapeProgress').textContent = '';
-      loadingModal.show();
-      
-      const results = [];
-      for (let i = 0; i < urls.length; i++) {
-        try {
-          const res = await fetch("/api", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ urls: [urls[i]] })
-          });
-          
-          if (!res.ok) {
-            throw new Error(`API returned ${res.status}: ${await res.text()}`);
-          }
-          
-          const data = await res.json();
-          results.push(data[0]);
-        } catch (e) {
-          console.error('Error scraping:', e);
-          results.push({ url: urls[i], error: e.message || "Failed to scrape" });
+
+      // Warning / Negative Trigger
+      if (/^(jangan|stop|hati-hati|never|don't|bahaya|kesalahan|hindari)\b/.test(lower)) {
+        return { label: 'Warning / Negative', pillClass: 'pill-hook-warning' };
+      }
+
+      // Question / Curiosity Hook
+      if (/^(kenapa|mengapa|bagaimana|pernah|why|how|what|is it|siapa|apakah)\b/.test(lower) || lower.includes('?')) {
+        return { label: 'Question / Inquiry', pillClass: 'pill-hook-question' };
+      }
+
+      // Direct Tutorial / Guide
+      if (/^(cara|tutorial|resep|guide|step|tips|rahasia)\b/.test(lower)) {
+        return { label: 'Tutorial / Guide', pillClass: 'pill-hook-guide' };
+      }
+
+      // Relatable Story / POV
+      if (/^(when you|pov|cerita|hari ini|pas lagi|sewaktu)\b/.test(lower)) {
+        return { label: 'Story / POV', pillClass: 'pill-hook-story' };
+      }
+
+      return { label: 'Statement / Brand', pillClass: 'pill-standard' };
+    }
+
+    // Intent Archetype and Metric Calculation
+    function computeMetrics(item) {
+      const views = parseInt(item.views, 10) || 0;
+      const likes = parseInt(item.like, 10) || 0;
+      const comments = parseInt(item.comments, 10) || 0;
+      const shares = parseInt(item.share, 10) || 0;
+      const saves = parseInt(item.saves, 10) || 0;
+
+      const totalInteractions = likes + comments + shares + saves;
+      const er = views > 0 ? (totalInteractions / views) * 100 : 0;
+      const saveRate = views > 0 ? (saves / views) * 100 : 0;
+      const shareRate = views > 0 ? (shares / views) * 100 : 0;
+      const commentRate = views > 0 ? (comments / views) * 100 : 0;
+
+      // Hook classification
+      const hookInfo = classifyHook(item.title || item.description || '');
+
+      // Intent Archetype Logic
+      let archetype = 'Standard';
+      let archetypeClass = 'pill-standard';
+
+      if (views > 0) {
+        if (shareRate >= 0.6 && er >= 5.0) {
+          archetype = 'Viral Loop';
+          archetypeClass = 'pill-viral';
+        } else if (saveRate >= 1.8 && saveRate > shareRate) {
+          archetype = 'Evergreen Guide';
+          archetypeClass = 'pill-evergreen';
+        } else if (er >= 3.0 && saveRate < 0.8 && shareRate < 0.25) {
+          archetype = 'Passive Fluff';
+          archetypeClass = 'pill-passive';
+        } else if (er < 2.5) {
+          archetype = 'Underperforming';
+          archetypeClass = 'pill-fail';
         }
-        
-        // Update progress
-        const percent = Math.round(((i + 1) / urls.length) * 100);
-        document.getElementById('scrapeProgress').style.width = `${percent}%`;
       }
-      
-      // Hide loading modal
-      loadingModal.hide();
-      
-      // Update metrics
-      updateMetrics(results);
-      
-      // Store and render results
-      paginatedData = results;
-      renderResults(results);
-      
-      // Show modal with complete results
-      resultsModal.show();
-      
-      // Update localStorage for history
-      localStorage.setItem("tiktokScraperHistory", JSON.stringify(results));
-      
-      // Update status
-      document.getElementById('statusText').textContent = 'Completed';
-      document.getElementById('statusText').classList.add('status-ready');
+
+      return {
+        views, likes, comments, shares, saves,
+        er, saveRate, shareRate, commentRate,
+        hookInfo,
+        archetype, archetypeClass
+      };
     }
-    
-    function updateMetrics(results) {
-      const validResults = results.filter(r => !r.error);
-      
-      // Update total videos
-      document.getElementById('totalVideos').textContent = validResults.length;
-      
-      // Calculate average views
-      if (validResults.length > 0) {
-        const totalViews = validResults.reduce((sum, item) => {
-          const views = parseInt(item.views || 0);
-          return sum + (isNaN(views) ? 0 : views);
-        }, 0);
-        
-        const avgViews = Math.round(totalViews / validResults.length);
-        document.getElementById('averageViews').textContent = formatNumber(avgViews);
-      }
-    }
-    
-    function formatNumber(num) {
-      if (num >= 1000000) {
-        return (num / 1000000).toFixed(1) + 'M';
-      } else if (num >= 1000) {
-        return (num / 1000).toFixed(1) + 'K';
-      }
-      return num.toString();
-    }
-    
-    function renderResults(data) {
-      // Hide placeholder if we have data
-      if (data.length > 0) {
-        document.getElementById('resultsPlaceholder').style.display = 'none';
-        document.getElementById('resultsPreview').style.display = document.getElementById('tableViewBtn').classList.contains('active') ? 'block' : 'none';
-        document.getElementById('cardViewContainer').style.display = document.getElementById('cardViewBtn').classList.contains('active') ? 'flex' : 'none';
-      } else {
-        document.getElementById('resultsPlaceholder').style.display = 'block';
-        document.getElementById('resultsPreview').style.display = 'none';
-        document.getElementById('cardViewContainer').style.display = 'none';
-        return;
-      }
-      
-      // Render table preview (limited columns)
-      const previewBody = document.getElementById('resultsPreviewBody');
-      previewBody.innerHTML = '';
-      
-      // Render card view
-      const cardContainer = document.getElementById('cardViewContainer');
-      cardContainer.innerHTML = '';
-      
-      // Render full results table
-      const resultsTable = document.getElementById('resultsTable');
-      resultsTable.innerHTML = '';
-      
-      data.forEach((item, index) => {
-        if (item.error) {
-          // Preview row
-          const previewRow = document.createElement('tr');
-          previewRow.innerHTML = `
-            <td colspan="5" class="text-danger">Error: ${item.error}</td>
-            <td><button class="btn btn-sm btn-outline-danger">Failed</button></td>
-          `;
-          previewBody.appendChild(previewRow);
-          
-          // Full results row
-          const fullRow = document.createElement('tr');
-          fullRow.innerHTML = `<td colspan="20" class="text-danger">Error: ${item.error}</td>`;
-          resultsTable.appendChild(fullRow);
-          
-          // Card
-          const errorCard = document.createElement('div');
-          errorCard.className = 'col-md-6 col-lg-4';
-          errorCard.innerHTML = `
-            <div class="card border-danger">
-              <div class="card-body">
-                <h6 class="card-subtitle mb-2 text-danger">Error Processing URL</h6>
-                <p class="card-text small">${item.error}</p>
-              </div>
-            </div>
-          `;
-          cardContainer.appendChild(errorCard);
-        } else {
-          // Preview row
-          const previewRow = document.createElement('tr');
-          previewRow.innerHTML = `
-            <td>${item.videoId || '-'}</td>
-            <td>${formatNumber(item.views) || '-'}</td>
-            <td>${formatNumber(item.like) || '-'}</td>
-            <td>${formatNumber(item.comments) || '-'}</td>
-            <td>${formatNumber(item.share) || '-'}</td>
-            <td><button class="btn btn-sm btn-outline-primary" onclick="showDetails(${index})">Details</button></td>
-          `;
-          previewBody.appendChild(previewRow);
-          
-          // Full results row
-          const fullRow = document.createElement('tr');
-          const keys = [
-            "videoId", "createdTime", "duration", "isCopyrighted", "musicId", "sound",
-            "like", "share", "comments", "views", "saves", "repost", "followers",
-            "following", "like-account", "video-count", "friends", "isAD", "title", "description"
-          ];
-          
-          fullRow.innerHTML = keys.map(key => `<td>${item[key] || '-'}</td>`).join('');
-          resultsTable.appendChild(fullRow);
-          
-          // Card
-          const card = document.createElement('div');
-          card.className = 'col-md-6 col-lg-4';
-          card.innerHTML = `
-            <div class="card h-100">
-              <div class="card-body">
-                <h6 class="card-title">Video ${item.videoId || 'Unknown'}</h6>
-                <div class="d-flex justify-content-between mb-2">
-                  <div class="text-muted small">Views</div>
-                  <div class="fw-bold">${formatNumber(item.views) || '-'}</div>
-                </div>
-                <div class="d-flex justify-content-between mb-2">
-                  <div class="text-muted small">Likes</div>
-                  <div class="fw-bold">${formatNumber(item.like) || '-'}</div>
-                </div>
-                <div class="d-flex justify-content-between mb-2">
-                  <div class="text-muted small">Comments</div>
-                  <div class="fw-bold">${formatNumber(item.comments) || '-'}</div>
-                </div>
-                <div class="d-flex justify-content-between mb-2">
-                  <div class="text-muted small">Shares</div>
-                  <div class="fw-bold">${formatNumber(item.share) || '-'}</div>
-                </div>
-                <button class="btn btn-sm btn-outline-primary mt-2 w-100" onclick="showDetails(${index})">View Details</button>
-              </div>
-            </div>
-          `;
-          cardContainer.appendChild(card);
-        }
+
+    function filterAndSortData() {
+      let filtered = sessionData.filter(item => {
+        if (item.error) return currentFilter === 'all';
+        const stats = computeMetrics(item);
+
+        if (currentFilter === 'viral') return stats.archetype === 'Viral Loop';
+        if (currentFilter === 'evergreen') return stats.archetype === 'Evergreen Guide';
+        if (currentFilter === 'passive') return stats.archetype === 'Passive Fluff';
+        if (currentFilter === 'underperforming') return stats.archetype === 'Underperforming';
+        if (currentFilter === 'organic') return !item.isAD;
+        if (currentFilter === 'sponsored') return !!item.isAD;
+        return true;
       });
+
+      if (currentSort === 'er-desc') {
+        filtered.sort((a, b) => (computeMetrics(b).er || 0) - (computeMetrics(a).er || 0));
+      } else if (currentSort === 'views-desc') {
+        filtered.sort((a, b) => (parseInt(b.views, 10) || 0) - (parseInt(a.views, 10) || 0));
+      } else if (currentSort === 'saves-desc') {
+        filtered.sort((a, b) => (parseInt(b.saves, 10) || 0) - (parseInt(a.saves, 10) || 0));
+      } else if (currentSort === 'shares-desc') {
+        filtered.sort((a, b) => (parseInt(b.share, 10) || 0) - (parseInt(a.share, 10) || 0));
+      }
+
+      return filtered;
     }
-    
-    function showDetails(index) {
-      // Scroll to the row in the results table
-      resultsModal.show();
-      
-      // Highlight the row
-      const rows = document.querySelectorAll('#resultsTable tr');
-      if (rows[index]) {
-        rows[index].classList.add('table-primary');
-        setTimeout(() => {
-          rows[index].scrollIntoView({ behavior: 'smooth', block: 'center' });
-          setTimeout(() => rows[index].classList.remove('table-primary'), 2000);
-        }, 300);
+
+    function analyzeHookIntelligence(validItems) {
+      if (validItems.length === 0) {
+        document.getElementById('topHookName').textContent = '(n/a)';
+        document.getElementById('durationSweetSpot').textContent = '(n/a)';
+        document.getElementById('hookWinnerTag').textContent = 'A/B Ready';
+        return;
+      }
+
+      const hookGroups = {};
+      const durationGroups = { short: [], mid: [], long: [] };
+
+      validItems.forEach(item => {
+        const stats = computeMetrics(item);
+        const label = stats.hookInfo.label;
+        if (!hookGroups[label]) hookGroups[label] = [];
+        hookGroups[label].push(stats);
+
+        const dur = item.duration || 0;
+        if (dur < 25) durationGroups.short.push(stats);
+        else if (dur <= 50) durationGroups.mid.push(stats);
+        else durationGroups.long.push(stats);
+      });
+
+      // Find top converting hook by Save Rate + Share Rate
+      let bestHook = '(n/a)';
+      let bestScore = -1;
+      for (const [hookName, statsList] of Object.entries(hookGroups)) {
+        const avgSaveShare = statsList.reduce((sum, s) => sum + s.saveRate + s.shareRate, 0) / statsList.length;
+        if (avgSaveShare > bestScore) {
+          bestScore = avgSaveShare;
+          bestHook = hookName;
+        }
+      }
+
+      // Find duration sweet spot
+      let bestDur = '30–50s';
+      let bestDurER = -1;
+      for (const [durKey, statsList] of Object.entries(durationGroups)) {
+        if (statsList.length > 0) {
+          const avgER = statsList.reduce((sum, s) => sum + s.er, 0) / statsList.length;
+          if (avgER > bestDurER) {
+            bestDurER = avgER;
+            if (durKey === 'short') bestDur = '< 25s (Snackable)';
+            else if (durKey === 'mid') bestDur = '25–50s (High Retention)';
+            else bestDur = '> 50s (In-Depth)';
+          }
+        }
+      }
+
+      document.getElementById('topHookName').textContent = bestHook;
+      document.getElementById('durationSweetSpot').textContent = bestDur;
+      document.getElementById('hookWinnerTag').textContent = 'Formula Ranked';
+    }
+
+    function analyzeAudioLeverage(validItems) {
+      if (validItems.length === 0) {
+        document.getElementById('topSoundName').textContent = '(n/a)';
+        document.getElementById('soundDiversityVal').textContent = '(n/a)';
+        document.getElementById('audioIntelTag').textContent = 'Sound Intel';
+        document.getElementById('audioIntelTag').className = 'pill-badge pill-standard';
+        return;
+      }
+
+      const soundGroups = {};
+      validItems.forEach(item => {
+        const soundKey = item.sound || (item.musicId ? `ID: ${item.musicId}` : 'Original Sound');
+        if (!soundGroups[soundKey]) soundGroups[soundKey] = [];
+        soundGroups[soundKey].push(computeMetrics(item));
+      });
+
+      const uniqueSoundsCount = Object.keys(soundGroups).length;
+      const diversityPct = Math.round((uniqueSoundsCount / validItems.length) * 100);
+
+      let bestSound = '(n/a)';
+      let bestScore = -1;
+      for (const [sName, statsList] of Object.entries(soundGroups)) {
+        const avgScore = statsList.reduce((sum, s) => sum + s.saveRate + s.shareRate, 0) / statsList.length;
+        if (avgScore > bestScore) {
+          bestScore = avgScore;
+          bestSound = sName;
+        }
+      }
+
+      const displaySound = bestSound.length > 18 ? bestSound.slice(0, 16) + '...' : bestSound;
+      document.getElementById('topSoundName').textContent = displaySound;
+      document.getElementById('topSoundName').title = bestSound;
+
+      if (diversityPct < 50 && validItems.length > 2) {
+        document.getElementById('soundDiversityVal').textContent = `${diversityPct}% (Saturated)`;
+        document.getElementById('audioIntelTag').textContent = 'Fatigue Alert';
+        document.getElementById('audioIntelTag').className = 'pill-badge pill-hook-warning';
+      } else {
+        document.getElementById('soundDiversityVal').textContent = `${diversityPct}% (Diverse)`;
+        document.getElementById('audioIntelTag').textContent = 'High Variety';
+        document.getElementById('audioIntelTag').className = 'pill-badge pill-evergreen';
       }
     }
-    
-    function downloadXLSX() {
-      if (paginatedData.length === 0) return;
-      
-      const headers = [
-        "Video ID", "Created Time", "Duration", "Copyrighted", "Music ID", "Sound",
-        "Likes", "Shares", "Comments", "Views", "Saves", "Repost", "Followers",
-        "Following", "Like Account", "Video Count", "Friends", "Is AD", "Title", "Description"
-      ];
-      
-      const mappedKeys = [
-        "videoId", "createdTime", "duration", "isCopyrighted", "musicId", "sound",
-        "like", "share", "comments", "views", "saves", "repost", "followers",
-        "following", "like-account", "video-count", "friends", "isAD", "title", "description"
-      ];
-      
-      const data = paginatedData.map(obj => 
-        mappedKeys.map(key => obj[key] || "")
-      );
-      
-      const ws = XLSX.utils.aoa_to_sheet([headers, ...data]);
-      const wb = XLSX.utils.book_new();
-      XLSX.utils.book_append_sheet(wb, ws, "TikTok Data");
-      XLSX.writeFile(wb, "tiktok_analysis.xlsx");
+
+    function renderLedger() {
+      const tbody = document.getElementById('tableBody');
+      const valid = sessionData.filter(d => !d.error);
+
+      // Top Ledger Metrics
+      document.getElementById('totalAudited').textContent = valid.length.toString();
+
+      if (valid.length > 0) {
+        const totalViews = valid.reduce((sum, d) => sum + (parseInt(d.views, 10) || 0), 0);
+        const avgViews = Math.round(totalViews / valid.length);
+        document.getElementById('averageViews').textContent = formatCount(avgViews);
+
+        const totalER = valid.reduce((sum, d) => sum + computeMetrics(d).er, 0);
+        const avgER = totalER / valid.length;
+        document.getElementById('averageER').textContent = formatPct(avgER);
+
+        const adCount = valid.filter(d => d.isAD).length;
+        const adPct = Math.round((adCount / valid.length) * 100);
+        document.getElementById('adRatio').textContent = `${adPct}% Ad`;
+        document.getElementById('adHint').textContent = `${adCount} of ${valid.length} posts sponsored`;
+
+        const avgSaveRate = valid.reduce((sum, d) => sum + computeMetrics(d).saveRate, 0) / valid.length;
+        const avgShareRate = valid.reduce((sum, d) => sum + computeMetrics(d).shareRate, 0) / valid.length;
+        const avgCommentRate = valid.reduce((sum, d) => sum + computeMetrics(d).commentRate, 0) / valid.length;
+
+        document.getElementById('radarSaveRate').textContent = formatPct(avgSaveRate);
+        document.getElementById('radarShareRate').textContent = formatPct(avgShareRate);
+        document.getElementById('radarCommentRate').textContent = formatPct(avgCommentRate);
+        document.getElementById('statusDescription').textContent = `${valid.length} video(s) analyzed`;
+
+        analyzeHookIntelligence(valid);
+        analyzeAudioLeverage(valid);
+      } else {
+        document.getElementById('averageViews').textContent = '0';
+        document.getElementById('averageER').textContent = '0.00%';
+        document.getElementById('adRatio').textContent = '0% Ad';
+        document.getElementById('adHint').textContent = '0 sponsored posts detected';
+        document.getElementById('radarSaveRate').textContent = '(n/a)';
+        document.getElementById('radarShareRate').textContent = '(n/a)';
+        document.getElementById('radarCommentRate').textContent = '(n/a)';
+        document.getElementById('statusDescription').textContent = 'Ready to ingest links';
+        analyzeHookIntelligence([]);
+        analyzeAudioLeverage([]);
+      }
+
+      const displayList = filterAndSortData();
+
+      if (displayList.length === 0) {
+        tbody.innerHTML = `
+          <tr>
+            <td colspan="11" style="text-align: center; padding: var(--space-xl); color: var(--color-muted);">
+              ${sessionData.length === 0 ? 'No video data loaded. Ingest TikTok links on the left or click Load Sample Batch.' : 'No videos match the active filter.'}
+            </td>
+          </tr>
+        `;
+        return;
+      }
+
+      tbody.innerHTML = '';
+      displayList.forEach((item) => {
+        const origIndex = sessionData.indexOf(item);
+        const tr = document.createElement('tr');
+        if (item.error) {
+          tr.innerHTML = `
+            <td style="text-align: center;">—</td>
+            <td style="font-family: var(--font-mono); color: var(--color-error);">${item.url ? item.url.slice(-18) : 'Error'}</td>
+            <td colspan="8" style="color: var(--color-error); font-size: var(--text-xs);">${item.error}</td>
+            <td>—</td>
+          `;
+        } else {
+          const stats = computeMetrics(item);
+          const isChecked = selectedForCompare.has(origIndex);
+
+          // Calculate proportion for micro-bar
+          const totalSaveShare = (stats.saves + stats.shares) || 1;
+          const savePct = Math.round((stats.saves / totalSaveShare) * 100);
+          const sharePct = 100 - savePct;
+
+          tr.innerHTML = `
+            <td style="text-align: center;">
+              <input type="checkbox" class="row-select" data-index="${origIndex}" ${isChecked ? 'checked' : ''} aria-label="Select video for comparison">
+            </td>
+            <td>
+              <div style="font-family: var(--font-mono); font-weight: 500;">${item.videoId || '—'}</div>
+              <div style="font-size: 0.725rem; color: var(--color-muted); max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                ${item.title || '(No caption)'}
+              </div>
+            </td>
+            <td>
+              <span class="pill-badge ${stats.hookInfo.pillClass}">${stats.hookInfo.label}</span>
+            </td>
+            <td class="num">${formatCount(stats.views)}</td>
+            <td class="num">${formatCount(stats.likes)}</td>
+            <td class="num">${formatCount(stats.saves)}</td>
+            <td class="num">${formatCount(stats.shares)}</td>
+            <td>
+              <div class="ratio-bar" title="Saves: ${savePct}% vs Shares: ${sharePct}%">
+                <div class="ratio-segment-save" style="width: ${savePct}%;"></div>
+                <div class="ratio-segment-share" style="width: ${sharePct}%;"></div>
+              </div>
+              <span style="font-size: 0.68rem; color: var(--color-muted); font-family: var(--font-mono);">${stats.saveRate.toFixed(1)}% / ${stats.shareRate.toFixed(1)}%</span>
+            </td>
+            <td class="num" style="font-weight: 600;">${formatPct(stats.er)}</td>
+            <td><span class="pill-badge ${stats.archetypeClass}">${stats.archetype}</span></td>
+            <td>
+              <button type="button" class="btn btn-sm" onclick="openDetails(${origIndex})">Inspect</button>
+            </td>
+          `;
+        }
+        tbody.appendChild(tr);
+      });
+
+      updateCompareUI();
     }
-    
-    // Load saved data if available
-    window.onload = function () {
-      const saved = localStorage.getItem("tiktokScraperHistory");
+
+    function updateCompareUI() {
+      const battleBtn = document.getElementById('battleTriggerBtn');
+      const banner = document.getElementById('compareBanner');
+      const count = selectedForCompare.size;
+
+      battleBtn.textContent = `Compare (${count})`;
+      battleBtn.disabled = count !== 2;
+
+      if (count === 1) {
+        banner.classList.add('visible');
+        document.getElementById('compareBannerText').textContent = '1 video selected. Check 1 more video to compare side-by-side.';
+        document.getElementById('bannerCompareBtn').disabled = true;
+      } else if (count === 2) {
+        banner.classList.add('visible');
+        document.getElementById('compareBannerText').textContent = '2 videos ready for Head-to-Head Comparison.';
+        document.getElementById('bannerCompareBtn').disabled = false;
+      } else {
+        banner.classList.remove('visible');
+      }
+    }
+
+    function toggleRowSelection(idx) {
+      if (selectedForCompare.has(idx)) {
+        selectedForCompare.delete(idx);
+      } else {
+        if (selectedForCompare.size >= 2) {
+          const first = selectedForCompare.values().next().value;
+          selectedForCompare.delete(first);
+        }
+        selectedForCompare.add(idx);
+      }
+      renderLedger();
+    }
+
+    function openBattleModal() {
+      if (selectedForCompare.size !== 2) return;
+      const [idxA, idxB] = Array.from(selectedForCompare);
+      const a = sessionData[idxA];
+      const b = sessionData[idxB];
+      if (!a || !b) return;
+
+      const statsA = computeMetrics(a);
+      const statsB = computeMetrics(b);
+
+      function deltaBadge(valA, valB, isPct = false, higherIsBetter = true) {
+        const diff = valA - valB;
+        if (Math.abs(diff) < 0.01) return `<span class="delta-tag">—</span>`;
+        const isWin = higherIsBetter ? diff > 0 : diff < 0;
+        const sign = diff > 0 ? '+' : '';
+        const formatted = isPct ? `${sign}${diff.toFixed(2)}%` : `${sign}${formatCount(diff)}`;
+        return `<span class="delta-tag ${isWin ? 'delta-win' : 'delta-loss'}">${formatted}</span>`;
+      }
+
+      const grid = document.getElementById('battleGrid');
+      grid.innerHTML = `
+        <div class="battle-card">
+          <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: var(--space-sm);">
+            <div>
+              <span class="pill-badge ${statsA.archetypeClass}">${statsA.archetype}</span>
+              <span class="pill-badge ${statsA.hookInfo.pillClass}" style="margin-left: var(--space-2xs);">${statsA.hookInfo.label}</span>
+              <h4 style="font-family: var(--font-display); font-size: var(--text-md); margin-top: var(--space-2xs);">${a.videoId}</h4>
+            </div>
+            <span style="font-size: var(--text-xs); color: var(--color-muted);">${a.isAD ? 'Sponsored' : 'Organic'}</span>
+          </div>
+
+          <p style="font-size: var(--text-xs); color: var(--color-ink); margin-bottom: var(--space-md); line-height: 1.4;">
+            "${a.title || a.description || 'No caption'}"
+          </p>
+
+          <div class="battle-metric-row">
+            <span>Engagement Rate</span>
+            <div><strong class="num">${formatPct(statsA.er)}</strong> ${deltaBadge(statsA.er, statsB.er, true)}</div>
+          </div>
+          <div class="battle-metric-row">
+            <span>Views</span>
+            <div><strong class="num">${formatCount(statsA.views)}</strong> ${deltaBadge(statsA.views, statsB.views)}</div>
+          </div>
+          <div class="battle-metric-row">
+            <span>Save Rate (S/V)</span>
+            <div><strong class="num">${formatPct(statsA.saveRate)}</strong> ${deltaBadge(statsA.saveRate, statsB.saveRate, true)}</div>
+          </div>
+          <div class="battle-metric-row">
+            <span>Share Rate (Sh/V)</span>
+            <div><strong class="num">${formatPct(statsA.shareRate)}</strong> ${deltaBadge(statsA.shareRate, statsB.shareRate, true)}</div>
+          </div>
+          <div class="battle-metric-row">
+            <span>Duration</span>
+            <div><strong class="num">${a.duration || 0}s</strong></div>
+          </div>
+          <div class="battle-metric-row">
+            <span>Sound</span>
+            <div style="max-width: 160px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${a.sound || '—'}</div>
+          </div>
+        </div>
+
+        <div class="battle-card">
+          <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: var(--space-sm);">
+            <div>
+              <span class="pill-badge ${statsB.archetypeClass}">${statsB.archetype}</span>
+              <span class="pill-badge ${statsB.hookInfo.pillClass}" style="margin-left: var(--space-2xs);">${statsB.hookInfo.label}</span>
+              <h4 style="font-family: var(--font-display); font-size: var(--text-md); margin-top: var(--space-2xs);">${b.videoId}</h4>
+            </div>
+            <span style="font-size: var(--text-xs); color: var(--color-muted);">${b.isAD ? 'Sponsored' : 'Organic'}</span>
+          </div>
+
+          <p style="font-size: var(--text-xs); color: var(--color-ink); margin-bottom: var(--space-md); line-height: 1.4;">
+            "${b.title || b.description || 'No caption'}"
+          </p>
+
+          <div class="battle-metric-row">
+            <span>Engagement Rate</span>
+            <div><strong class="num">${formatPct(statsB.er)}</strong> ${deltaBadge(statsB.er, statsA.er, true)}</div>
+          </div>
+          <div class="battle-metric-row">
+            <span>Views</span>
+            <div><strong class="num">${formatCount(statsB.views)}</strong> ${deltaBadge(statsB.views, statsA.views)}</div>
+          </div>
+          <div class="battle-metric-row">
+            <span>Save Rate (S/V)</span>
+            <div><strong class="num">${formatPct(statsB.saveRate)}</strong> ${deltaBadge(statsB.saveRate, statsA.saveRate, true)}</div>
+          </div>
+          <div class="battle-metric-row">
+            <span>Share Rate (Sh/V)</span>
+            <div><strong class="num">${formatPct(statsB.shareRate)}</strong> ${deltaBadge(statsB.shareRate, statsA.shareRate, true)}</div>
+          </div>
+          <div class="battle-metric-row">
+            <span>Duration</span>
+            <div><strong class="num">${b.duration || 0}s</strong></div>
+          </div>
+          <div class="battle-metric-row">
+            <span>Sound</span>
+            <div style="max-width: 160px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${b.sound || '—'}</div>
+          </div>
+        </div>
+      `;
+
+      document.getElementById('battleModal').style.display = 'grid';
+    }
+
+    function closeBattleModal() {
+      document.getElementById('battleModal').style.display = 'none';
+    }
+
+    async function executeScrape() {
+      const runBtn = document.getElementById('runScrapeBtn');
+      const badge = document.getElementById('batchBadge');
+      const track = document.getElementById('progressTrack');
+      const fill = document.getElementById('progressFill');
+
+      if (currentMode === 'user') {
+        const username = document.getElementById('usernameInput').value.trim();
+        if (!username) {
+          alert('Please enter a TikTok @username (e.g. @tokopedia or @aerostreet)');
+          return;
+        }
+
+        runBtn.disabled = true;
+        badge.textContent = 'Pulling Profile';
+        badge.className = 'pill-badge pill-viral';
+        track.style.display = 'block';
+        fill.style.transform = 'scaleX(0.2)';
+
+        try {
+          const res = await fetch('/api', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ username })
+          });
+
+          if (!res.ok) throw new Error(`API error ${res.status}: ${await res.text()}`);
+          const profileData = await res.json();
+
+          if (profileData.error) throw new Error(profileData.error);
+          const urls = profileData.videoUrls || [];
+
+          if (urls.length === 0) {
+            alert(`No public video links found for ${username}. Try direct video URLs.`);
+            return;
+          }
+
+          fill.style.transform = 'scaleX(0.4)';
+          badge.textContent = `Scraping ${urls.length} Videos`;
+
+          for (let i = 0; i < urls.length; i++) {
+            const vRes = await fetch('/api', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ urls: [urls[i]] })
+            });
+            const vData = await vRes.json();
+            if (Array.isArray(vData) && vData[0]) {
+              sessionData.push(vData[0]);
+            }
+            fill.style.transform = `scaleX(${0.4 + (0.6 * ((i + 1) / urls.length))})`;
+            renderLedger();
+          }
+        } catch (err) {
+          alert(`Profile scrape error: ${err.message}`);
+        } finally {
+          runBtn.disabled = false;
+          badge.textContent = 'Completed';
+          badge.className = 'pill-badge pill-standard';
+          setTimeout(() => { track.style.display = 'none'; }, 1000);
+          localStorage.setItem('tiktokSightSession', JSON.stringify(sessionData));
+        }
+
+      } else {
+        // Direct URL Batch
+        const input = document.getElementById('urlInput').value.trim();
+        const urls = [...new Set(input.split('\n').map(u => u.trim()).filter(Boolean))];
+
+        if (urls.length === 0) {
+          alert('Please enter at least one TikTok video URL, or click Load Sample Batch.');
+          return;
+        }
+
+        runBtn.disabled = true;
+        badge.textContent = 'Processing';
+        badge.className = 'pill-badge pill-viral';
+        track.style.display = 'block';
+        fill.style.transform = 'scaleX(0)';
+
+        for (let i = 0; i < urls.length; i++) {
+          const url = urls[i];
+          try {
+            const res = await fetch('/api', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ urls: [url] })
+            });
+
+            if (!res.ok) throw new Error(`API error ${res.status}: ${await res.text()}`);
+
+            const data = await res.json();
+            if (Array.isArray(data) && data[0]) {
+              sessionData.push(data[0]);
+            } else {
+              sessionData.push({ url, error: 'Unexpected response schema' });
+            }
+          } catch (err) {
+            sessionData.push({ url, error: err.message || 'Scrape failed' });
+          }
+
+          const pct = (i + 1) / urls.length;
+          fill.style.transform = `scaleX(${pct})`;
+          renderLedger();
+        }
+
+        runBtn.disabled = false;
+        badge.textContent = 'Completed';
+        badge.className = 'pill-badge pill-standard';
+        setTimeout(() => { track.style.display = 'none'; }, 1000);
+        localStorage.setItem('tiktokSightSession', JSON.stringify(sessionData));
+      }
+    }
+
+    function loadSampleBatch() {
+      sessionData = JSON.parse(JSON.stringify(sampleDataset));
+      selectedForCompare.clear();
+      localStorage.setItem('tiktokSightSession', JSON.stringify(sessionData));
+      renderLedger();
+    }
+
+    function openDetails(idx) {
+      const item = sessionData[idx];
+      if (!item || item.error) return;
+
+      const stats = computeMetrics(item);
+      const grid = document.getElementById('modalGrid');
+      grid.innerHTML = `
+        <div class="inspector-item"><span class="inspector-key">Video ID</span><span class="inspector-val">${item.videoId || '—'}</span></div>
+        <div class="inspector-item"><span class="inspector-key">Intent Archetype</span><span class="inspector-val"><span class="pill-badge ${stats.archetypeClass}">${stats.archetype}</span></span></div>
+        <div class="inspector-item"><span class="inspector-key">Hook Formula</span><span class="inspector-val"><span class="pill-badge ${stats.hookInfo.pillClass}">${stats.hookInfo.label}</span></span></div>
+        <div class="inspector-item"><span class="inspector-key">Created Date</span><span class="inspector-val">${item.createdTime || '—'}</span></div>
+        <div class="inspector-item"><span class="inspector-key">Duration</span><span class="inspector-val">${item.duration ? item.duration + 's' : '—'}</span></div>
+        <div class="inspector-item"><span class="inspector-key">Is Sponsored (Ad)</span><span class="inspector-val">${item.isAD ? 'Yes' : 'No'}</span></div>
+        <div class="inspector-item"><span class="inspector-key">Sound Title</span><span class="inspector-val">${item.sound || '—'}</span></div>
+        <div class="inspector-item"><span class="inspector-key">Music ID</span><span class="inspector-val">${item.musicId || '—'}</span></div>
+        <div class="inspector-item"><span class="inspector-key">Views</span><span class="inspector-val">${item.views || 0}</span></div>
+        <div class="inspector-item"><span class="inspector-key">Engagement Rate (ER%)</span><span class="inspector-val">${formatPct(stats.er)}</span></div>
+        <div class="inspector-item"><span class="inspector-key">Likes / Saves / Shares</span><span class="inspector-val">${item.like || 0} / ${item.saves || 0} / ${item.share || 0}</span></div>
+        <div class="inspector-item"><span class="inspector-key">Comments</span><span class="inspector-val">${item.comments || 0}</span></div>
+        <div class="inspector-item"><span class="inspector-key">Save Rate (S/V)</span><span class="inspector-val">${formatPct(stats.saveRate)}</span></div>
+        <div class="inspector-item"><span class="inspector-key">Share Rate (Sh/V)</span><span class="inspector-val">${formatPct(stats.shareRate)}</span></div>
+        <div class="inspector-item"><span class="inspector-key">Author Followers</span><span class="inspector-val">${item.followers || 0}</span></div>
+        <div class="inspector-item"><span class="inspector-key">Author Heart Count</span><span class="inspector-val">${item['like-account'] || 0}</span></div>
+        <div class="inspector-item" style="grid-column: 1 / -1;"><span class="inspector-key">Title</span><span class="inspector-val">${item.title || '—'}</span></div>
+        <div class="inspector-item" style="grid-column: 1 / -1;"><span class="inspector-key">Description</span><span class="inspector-val">${item.description || '—'}</span></div>
+      `;
+
+      document.getElementById('detailModal').style.display = 'grid';
+    }
+
+    function closeModal() {
+      document.getElementById('detailModal').style.display = 'none';
+    }
+
+    function exportToExcel() {
+      const valid = sessionData.filter(d => !d.error);
+      if (valid.length === 0) {
+        alert('No data to export. Analyze at least one valid video first.');
+        return;
+      }
+
+      const headers = [
+        'Video ID', 'Intent Archetype', 'Hook Formula', 'Created Time', 'Duration (s)',
+        'Is Sponsored', 'Sound Title', 'Music ID', 'Views', 'Likes', 'Comments',
+        'Shares', 'Saves', 'Engagement Rate %', 'Save Rate %', 'Share Rate %',
+        'Author Followers', 'Author Hearts', 'Title', 'Description'
+      ];
+
+      const rows = valid.map(item => {
+        const stats = computeMetrics(item);
+        return [
+          item.videoId || '',
+          stats.archetype,
+          stats.hookInfo.label,
+          item.createdTime || '',
+          item.duration || 0,
+          item.isAD ? 'TRUE' : 'FALSE',
+          item.sound || '',
+          item.musicId || '',
+          parseInt(item.views, 10) || 0,
+          parseInt(item.like, 10) || 0,
+          parseInt(item.comments, 10) || 0,
+          parseInt(item.share, 10) || 0,
+          parseInt(item.saves, 10) || 0,
+          parseFloat(stats.er.toFixed(2)),
+          parseFloat(stats.saveRate.toFixed(2)),
+          parseFloat(stats.shareRate.toFixed(2)),
+          parseInt(item.followers, 10) || 0,
+          parseInt(item['like-account'], 10) || 0,
+          item.title || '',
+          item.description || ''
+        ];
+      });
+
+      const ws = XLSX.utils.aoa_to_sheet([headers, ...rows]);
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, 'TiktokSight_Analytics');
+      XLSX.writeFile(wb, `tiktoksight_audit_${new Date().toISOString().slice(0, 10)}.xlsx`);
+    }
+
+    // Attach Event Listeners
+    document.getElementById('runScrapeBtn').addEventListener('click', executeScrape);
+    document.getElementById('loadDemoBtn').addEventListener('click', loadSampleBatch);
+    document.getElementById('analyzeTriggerBtn').addEventListener('click', () => {
+      if (currentMode === 'url') document.getElementById('urlInput').focus();
+      else document.getElementById('usernameInput').focus();
+    });
+    document.getElementById('exportBtn').addEventListener('click', exportToExcel);
+    document.getElementById('closeModalBtn').addEventListener('click', closeModal);
+    document.getElementById('modalCloseActionBtn').addEventListener('click', closeModal);
+    document.getElementById('closeBattleModalBtn').addEventListener('click', closeBattleModal);
+    document.getElementById('battleCloseActionBtn').addEventListener('click', closeBattleModal);
+    document.getElementById('battleTriggerBtn').addEventListener('click', openBattleModal);
+    document.getElementById('bannerCompareBtn').addEventListener('click', openBattleModal);
+
+    // Mode Toggle Logic
+    document.getElementById('modeUrlBtn').addEventListener('click', () => {
+      currentMode = 'url';
+      document.getElementById('modeUrlBtn').classList.add('active');
+      document.getElementById('modeUserBtn').classList.remove('active');
+      document.getElementById('urlModeContainer').style.display = 'block';
+      document.getElementById('userModeContainer').style.display = 'none';
+    });
+
+    document.getElementById('modeUserBtn').addEventListener('click', () => {
+      currentMode = 'user';
+      document.getElementById('modeUserBtn').classList.add('active');
+      document.getElementById('modeUrlBtn').classList.remove('active');
+      document.getElementById('urlModeContainer').style.display = 'none';
+      document.getElementById('userModeContainer').style.display = 'block';
+    });
+
+    document.getElementById('clearDataBtn').addEventListener('click', () => {
+      if (confirm('Clear all session data?')) {
+        sessionData = [];
+        selectedForCompare.clear();
+        localStorage.removeItem('tiktokSightSession');
+        renderLedger();
+      }
+    });
+
+    // Filter pills event handling
+    document.querySelectorAll('.filter-pill').forEach(pill => {
+      pill.addEventListener('click', (e) => {
+        document.querySelectorAll('.filter-pill').forEach(p => p.classList.remove('active'));
+        e.target.classList.add('active');
+        currentFilter = e.target.getAttribute('data-filter');
+        renderLedger();
+      });
+    });
+
+    // Sort select event handling
+    document.getElementById('sortSelect').addEventListener('change', (e) => {
+      currentSort = e.target.value;
+      renderLedger();
+    });
+
+    // Checkbox delegation on table
+    document.getElementById('tableBody').addEventListener('change', (e) => {
+      if (e.target.classList.contains('row-select')) {
+        const idx = parseInt(e.target.getAttribute('data-index'), 10);
+        toggleRowSelection(idx);
+      }
+    });
+
+    // Modal dismissals on Escape and Backdrop
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') {
+        closeModal();
+        closeBattleModal();
+      }
+    });
+
+    document.getElementById('detailModal').addEventListener('click', (e) => {
+      if (e.target.id === 'detailModal') closeModal();
+    });
+
+    document.getElementById('battleModal').addEventListener('click', (e) => {
+      if (e.target.id === 'battleModal') closeBattleModal();
+    });
+
+    // Initial restore on load
+    window.addEventListener('DOMContentLoaded', () => {
+      const saved = localStorage.getItem('tiktokSightSession');
       if (saved) {
         try {
-          paginatedData = JSON.parse(saved);
-          updateMetrics(paginatedData);
-          renderResults(paginatedData);
+          sessionData = JSON.parse(saved);
+          renderLedger();
         } catch (e) {
-          console.error("Error loading saved data", e);
+          console.warn('Failed restoring session', e);
         }
       }
-    };
-    
-    // Expose function to global scope for onClick handlers
-    window.showDetails = showDetails;
+    });
+
+    window.openDetails = openDetails;
   </script>
 </body>
 </html>

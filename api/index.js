@@ -40,17 +40,12 @@ async function getTikTokData(url) {
     
     // Add basic evasion techniques
     await page.evaluateOnNewDocument(() => {
-      // Overwrite the 'webdriver' property
       Object.defineProperty(navigator, 'webdriver', {
         get: () => false,
       });
-      
-      // Create a fake language list
       Object.defineProperty(navigator, 'languages', {
         get: () => ['en-US', 'en'],
       });
-      
-      // Overwrite the plugins array
       Object.defineProperty(navigator, 'plugins', {
         get: () => [1, 2, 3, 4, 5],
       });
@@ -116,6 +111,68 @@ async function getTikTokData(url) {
   }
 }
 
+// Extract latest video links from creator profile
+async function getTikTokUserVideos(username) {
+  let browser;
+  try {
+    const cleanUser = username.replace(/^@/, '').trim();
+    const profileUrl = `https://www.tiktok.com/@${cleanUser}`;
+    console.log('Connecting to Browserless for profile extraction:', profileUrl);
+
+    if (!BROWSERLESS_TOKEN) {
+      throw new Error('BROWSERLESS_TOKEN is not defined');
+    }
+
+    browser = await puppeteer.connect({
+      browserWSEndpoint: BROWSERLESS_WS,
+      timeout: 90000
+    });
+
+    const page = await browser.newPage();
+    await page.setViewport({ width: 1280, height: 800 });
+    await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36');
+
+    await page.evaluateOnNewDocument(() => {
+      Object.defineProperty(navigator, 'webdriver', { get: () => false });
+      Object.defineProperty(navigator, 'languages', { get: () => ['en-US', 'en'] });
+      Object.defineProperty(navigator, 'plugins', { get: () => [1, 2, 3, 4, 5] });
+    });
+
+    await page.goto(profileUrl, { waitUntil: 'networkidle0', timeout: 60000 });
+    await delay(7000);
+
+    const videoUrls = await page.evaluate((uname) => {
+      const links = Array.from(document.querySelectorAll('a[href*="/video/"]'));
+      const hrefs = links.map(a => a.href).filter(href => href.includes('/video/'));
+      const unique = [...new Set(hrefs)].slice(0, 12);
+      if (unique.length > 0) return unique;
+
+      const scripts = Array.from(document.getElementsByTagName('script'));
+      const sigiScript = scripts.find(s => s.textContent?.includes('__DEFAULT_SCOPE__') || s.textContent?.includes('SIGI_STATE'));
+      if (sigiScript) {
+        try {
+          const json = JSON.parse(sigiScript.textContent);
+          const itemList = json?.__DEFAULT_SCOPE__?.['webapp.user-detail']?.itemList || json?.ItemModule;
+          if (Array.isArray(itemList)) {
+            return itemList.slice(0, 12).map(id => `https://www.tiktok.com/@${uname}/video/${id}`);
+          }
+        } catch (e) {}
+      }
+      return [];
+    }, cleanUser);
+
+    await page.close();
+    return { username: cleanUser, profileUrl, videoUrls };
+  } catch (err) {
+    console.error('Error extracting profile videos:', err);
+    return { username, error: err.message, videoUrls: [] };
+  } finally {
+    if (browser) {
+      try { await browser.disconnect(); } catch (e) {}
+    }
+  }
+}
+
 // Vercel serverless function handler
 module.exports = async (req, res) => {
   // Enable CORS
@@ -124,7 +181,6 @@ module.exports = async (req, res) => {
   res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS,PATCH,DELETE,POST,PUT');
   res.setHeader('Access-Control-Allow-Headers', 'X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version');
   
-  // Handle OPTIONS request (preflight)
   if (req.method === 'OPTIONS') {
     return res.status(200).end();
   }
@@ -133,24 +189,29 @@ module.exports = async (req, res) => {
   
   try {
     if (req.method !== 'POST') {
-      console.log('Method not allowed:', req.method);
       return res.status(405).json({ error: "Method not allowed" });
     }
     
-    // Parse body if it's not already parsed
-    let urls;
-    if (typeof req.body === 'string') {
-      const body = JSON.parse(req.body);
-      urls = body.urls;
-    } else {
-      urls = req.body?.urls;
+    let body = req.body;
+    if (typeof body === 'string') {
+      try {
+        body = JSON.parse(body);
+      } catch (e) {
+        body = {};
+      }
+    }
+
+    // Handle profile extraction mode
+    if (body?.username) {
+      console.log('Profile extraction requested for:', body.username);
+      const profileResult = await getTikTokUserVideos(body.username);
+      return res.status(200).json(profileResult);
     }
     
-    console.log('Request body URLs:', urls);
-    
+    // Handle URL array mode
+    const urls = body?.urls;
     if (!urls || !Array.isArray(urls)) {
-      console.log('Invalid request, missing or invalid URLs');
-      return res.status(400).json({ error: "Invalid request" });
+      return res.status(400).json({ error: "Invalid request, missing urls or username" });
     }
     
     console.log('Processing URLs:', urls);
@@ -162,4 +223,4 @@ module.exports = async (req, res) => {
     console.error('Unhandled API error:', error);
     return res.status(500).json({ error: error.message || 'Internal server error' });
   }
-}; 
+};
