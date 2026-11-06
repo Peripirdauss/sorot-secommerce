@@ -51,45 +51,64 @@ async function getTikTokData(url) {
       });
     });
     
-    await page.goto(url, { waitUntil: 'networkidle0', timeout: 60000 });
-    console.log('Page loaded, waiting...');
-    await delay(8000);
+    await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 35000 });
+    console.log('Page loaded, waiting for rehydration...');
+    await delay(2500);
 
     console.log('Extracting data...');
     const mainData = await page.evaluate(() => {
-      const scripts = Array.from(document.getElementsByTagName('script'));
-      const sigiScript = scripts.find(s => s.textContent?.includes('__DEFAULT_SCOPE__'));
-      if (!sigiScript) return { error: "No JSON data found" };
+      let jsonData = null;
+      const universalScript = document.getElementById('__UNIVERSAL_DATA_FOR_REHYDRATION__');
+      if (universalScript && universalScript.textContent) {
+        try {
+          jsonData = JSON.parse(universalScript.textContent);
+        } catch (e) {}
+      }
+
+      if (!jsonData) {
+        const scripts = Array.from(document.getElementsByTagName('script'));
+        const sigiScript = scripts.find(s => s.textContent?.includes('__DEFAULT_SCOPE__'));
+        if (sigiScript) {
+          try {
+            jsonData = JSON.parse(sigiScript.textContent);
+          } catch (e) {}
+        }
+      }
+
+      if (!jsonData) return { error: "No JSON rehydration data found on page" };
+
       try {
-        const jsonData = JSON.parse(sigiScript.textContent);
         const itemStruct = jsonData?.__DEFAULT_SCOPE__?.['webapp.video-detail']?.itemInfo?.itemStruct || {};
         const statsV2 = itemStruct.statsV2 || {};
+        const stats = itemStruct.stats || {};
         const authorStats = itemStruct.authorStats || {};
+        const author = itemStruct.author || {};
         const shareMeta = jsonData?.__DEFAULT_SCOPE__?.['webapp.video-detail']?.shareMeta || {};
+
         return {
           videoId: itemStruct.id || '',
           createdTime: itemStruct.createTime ? new Date(itemStruct.createTime * 1000).toLocaleString() : '',
-          duration: itemStruct.music?.duration || 0,
+          duration: itemStruct.music?.duration || itemStruct.video?.duration || 0,
           isCopyrighted: itemStruct.music?.isCopyrighted || false,
           musicId: itemStruct.music?.id || '',
           sound: itemStruct.music?.title || '',
-          like: statsV2.diggCount || '0',
-          share: statsV2.shareCount || '0',
-          comments: statsV2.commentCount || '0',
-          views: statsV2.playCount || '0',
-          saves: statsV2.collectCount || '0',
-          repost: statsV2.repostCount || '0',
-          followers: authorStats.followerCount || 0,
-          following: authorStats.followingCount || 0,
-          'like-account': authorStats.heartCount || 0,
+          like: statsV2.diggCount || stats.diggCount || '0',
+          share: statsV2.shareCount || stats.shareCount || '0',
+          comments: statsV2.commentCount || stats.commentCount || '0',
+          views: statsV2.playCount || stats.playCount || '0',
+          saves: statsV2.collectCount || stats.collectCount || '0',
+          repost: statsV2.repostCount || stats.repostCount || '0',
+          followers: authorStats.followerCount || author.followerCount || 0,
+          following: authorStats.followingCount || author.followingCount || 0,
+          'like-account': authorStats.heartCount || authorStats.heart || 0,
           'video-count': authorStats.videoCount || 0,
           friends: authorStats.friendCount || 0,
           isAD: itemStruct.isAd || false,
-          title: shareMeta.title || '',
-          description: shareMeta.desc || ''
+          title: itemStruct.desc || shareMeta.title || '',
+          description: shareMeta.desc || itemStruct.desc || ''
         };
       } catch (e) {
-        return { error: "Failed to parse JSON: " + e.message };
+        return { error: "Failed to parse video item: " + e.message };
       }
     });
 
@@ -115,7 +134,14 @@ async function getTikTokData(url) {
 async function getTikTokUserVideos(username) {
   let browser;
   try {
-    const cleanUser = username.replace(/^@/, '').trim();
+    let cleanUser = (username || '').trim();
+    if (cleanUser.includes('tiktok.com/@')) {
+      cleanUser = cleanUser.split('tiktok.com/@')[1].split('/')[0].split('?')[0];
+    } else if (cleanUser.includes('tiktok.com/')) {
+      cleanUser = cleanUser.split('tiktok.com/')[1].split('/')[0].split('?')[0];
+    }
+    cleanUser = cleanUser.replace(/^@/, '').trim();
+
     const profileUrl = `https://www.tiktok.com/@${cleanUser}`;
     console.log('Connecting to Browserless for profile extraction:', profileUrl);
 
@@ -125,12 +151,12 @@ async function getTikTokUserVideos(username) {
 
     browser = await puppeteer.connect({
       browserWSEndpoint: BROWSERLESS_WS,
-      timeout: 90000
+      timeout: 45000
     });
 
     const page = await browser.newPage();
     await page.setViewport({ width: 1280, height: 800 });
-    await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36');
+    await page.setUserAgent('Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36');
 
     await page.evaluateOnNewDocument(() => {
       Object.defineProperty(navigator, 'webdriver', { get: () => false });
@@ -138,31 +164,47 @@ async function getTikTokUserVideos(username) {
       Object.defineProperty(navigator, 'plugins', { get: () => [1, 2, 3, 4, 5] });
     });
 
-    await page.goto(profileUrl, { waitUntil: 'networkidle0', timeout: 60000 });
-    await delay(7000);
+    await page.goto(profileUrl, { waitUntil: 'domcontentloaded', timeout: 35000 });
+    await delay(3000);
 
-    const videoUrls = await page.evaluate((uname) => {
+    const profileData = await page.evaluate((uname) => {
+      let stats = {};
+      let user = {};
+
+      const universalScript = document.getElementById('__UNIVERSAL_DATA_FOR_REHYDRATION__');
+      if (universalScript && universalScript.textContent) {
+        try {
+          const json = JSON.parse(universalScript.textContent);
+          const detail = json?.['__DEFAULT_SCOPE__']?.['webapp.user-detail'] || {};
+          const userInfo = detail.userInfo || {};
+          stats = userInfo.stats || {};
+          user = userInfo.user || {};
+        } catch (e) {}
+      }
+
       const links = Array.from(document.querySelectorAll('a[href*="/video/"]'));
       const hrefs = links.map(a => a.href).filter(href => href.includes('/video/'));
       const unique = [...new Set(hrefs)].slice(0, 12);
-      if (unique.length > 0) return unique;
 
-      const scripts = Array.from(document.getElementsByTagName('script'));
-      const sigiScript = scripts.find(s => s.textContent?.includes('__DEFAULT_SCOPE__') || s.textContent?.includes('SIGI_STATE'));
-      if (sigiScript) {
-        try {
-          const json = JSON.parse(sigiScript.textContent);
-          const itemList = json?.__DEFAULT_SCOPE__?.['webapp.user-detail']?.itemList || json?.ItemModule;
-          if (Array.isArray(itemList)) {
-            return itemList.slice(0, 12).map(id => `https://www.tiktok.com/@${uname}/video/${id}`);
-          }
-        } catch (e) {}
-      }
-      return [];
+      return {
+        nickname: user.nickname || uname,
+        followerCount: stats.followerCount || 0,
+        heartCount: stats.heartCount || stats.heart || 0,
+        videoCount: stats.videoCount || 0,
+        videoUrls: unique
+      };
     }, cleanUser);
 
     await page.close();
-    return { username: cleanUser, profileUrl, videoUrls };
+    return {
+      username: cleanUser,
+      profileUrl,
+      nickname: profileData.nickname,
+      followerCount: profileData.followerCount,
+      heartCount: profileData.heartCount,
+      videoCount: profileData.videoCount,
+      videoUrls: profileData.videoUrls
+    };
   } catch (err) {
     console.error('Error extracting profile videos:', err);
     return { username, error: err.message, videoUrls: [] };

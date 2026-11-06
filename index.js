@@ -8,6 +8,12 @@ const apiHandler = require('./api');
 const server = http.createServer((req, res) => {
   console.log(`${req.method} ${req.url}`);
 
+  if (req.url === '/favicon.ico') {
+    res.writeHead(204);
+    res.end();
+    return;
+  }
+
   if (req.url.startsWith('/api')) {
     // Provide Express/Vercel helper compatibility for native Node http response
     if (!res.status) {

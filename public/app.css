@@ -100,9 +100,9 @@ body {
   font-size: var(--text-sm);
   cursor: pointer;
   border: var(--rule-hair) solid var(--color-border-subtle);
-  background: transparent;
+  background: var(--color-paper);
   color: var(--color-ink);
-  transition: background-color var(--dur-micro) var(--ease-out), border-color var(--dur-micro) var(--ease-out);
+  transition: background-color var(--dur-micro) var(--ease-out), border-color var(--dur-micro) var(--ease-out), color var(--dur-micro) var(--ease-out);
   white-space: nowrap;
   text-decoration: none;
   user-select: none;
@@ -111,10 +111,12 @@ body {
 .btn:hover {
   background: var(--color-paper-2);
   border-color: var(--color-muted);
+  color: var(--color-ink);
 }
 
 .btn:active {
   background: var(--color-paper-3);
+  color: var(--color-ink);
 }
 
 .btn:focus-visible {
@@ -123,9 +125,9 @@ body {
 }
 
 .btn:disabled {
-  opacity: 0.5;
+  opacity: 0.55;
   cursor: not-allowed;
-  background: transparent;
+  pointer-events: none;
 }
 
 .btn-primary {
@@ -138,11 +140,23 @@ body {
 .btn-primary:hover {
   background: var(--color-accent-deep);
   border-color: var(--color-accent-edge);
+  color: var(--color-accent-ink);
 }
 
 .btn-primary:active {
+  background: var(--color-accent-deep);
+  color: var(--color-accent-ink);
   transform: translateY(2px);
   box-shadow: var(--shadow-key-press);
+}
+
+.btn-primary:disabled {
+  background: var(--color-accent);
+  color: var(--color-accent-ink);
+  border-color: var(--color-accent-edge);
+  opacity: 0.65;
+  cursor: not-allowed;
+  box-shadow: none;
 }
 
 .btn-sm {
@@ -327,6 +341,29 @@ body {
   outline: 2px solid var(--color-focus);
   outline-offset: 1px;
   background: var(--color-paper);
+}
+
+.scrape-notice {
+  font-size: var(--text-xs);
+  padding: var(--space-xs);
+  border-radius: var(--radius-input);
+  margin-bottom: var(--space-sm);
+  background: var(--color-paper-2);
+  border: var(--rule-hair) solid var(--color-border);
+  color: var(--color-ink);
+  line-height: 1.4;
+}
+
+.scrape-notice.notice-error {
+  border-color: var(--color-error);
+  color: var(--color-error);
+  background: var(--color-error-wash);
+}
+
+.scrape-notice.notice-info {
+  border-color: var(--color-accent);
+  color: var(--color-ink);
+  background: var(--color-accent-wash);
 }
 
 .input-actions-bar {

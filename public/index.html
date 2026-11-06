@@ -21,7 +21,7 @@
       </a>
       <div class="nav-actions">
         <button type="button" class="btn" id="exportBtn">Export XLSX</button>
-        <button type="button" class="btn btn-primary" id="analyzeTriggerBtn">Analyze Batch</button>
+        <button type="button" class="btn" id="analyzeTriggerBtn">Focus Ingest Input</button>
       </div>
     </div>
   </header>
@@ -93,24 +93,29 @@
               <textarea
                 id="urlInput"
                 class="url-textarea"
-                placeholder="https://www.tiktok.com/@creator/video/7123456789012345678&#10;https://www.tiktok.com/@competitor/video/7234567890123456789"
+                placeholder="https://www.tiktok.com/@creator/video/7123456789012345678"
                 aria-label="TikTok Video URLs"
-              ></textarea>
+              >https://www.tiktok.com/@mineralbotanica/video/7703890519725739285
+https://www.tiktok.com/@aerostreet/video/7345812901928374829
+https://www.tiktok.com/@tokopedia/video/7346129847192839102</textarea>
             </div>
 
             <!-- Username Ingestion Mode -->
             <div id="userModeContainer" style="display: none;">
               <p class="lead" style="font-size: var(--text-xs); margin-bottom: var(--space-xs); color: var(--color-muted);">
-                Enter TikTok @handle to pull the latest public videos.
+                Enter TikTok @handle or profile link to pull latest video metadata.
               </p>
               <input
                 type="text"
                 id="usernameInput"
                 class="single-input"
-                placeholder="@aerostreet or @tokopedia"
+                placeholder="@mineralbotanica or @aerostreet"
+                value="@mineralbotanica"
                 aria-label="TikTok Creator Username"
               >
             </div>
+
+            <div id="scrapeNotice" class="scrape-notice" role="alert" style="display: none;"></div>
 
             <div class="progress-track" id="progressTrack">
               <div class="progress-fill" id="progressFill"></div>
@@ -906,20 +911,36 @@
       document.getElementById('battleModal').style.display = 'none';
     }
 
+    function showNotice(msg, type = 'info') {
+      const el = document.getElementById('scrapeNotice');
+      if (!el) return;
+      if (!msg) {
+        el.style.display = 'none';
+        el.textContent = '';
+        return;
+      }
+      el.textContent = msg;
+      el.className = `scrape-notice ${type === 'error' ? 'notice-error' : 'notice-info'}`;
+      el.style.display = 'block';
+    }
+
     async function executeScrape() {
       const runBtn = document.getElementById('runScrapeBtn');
       const badge = document.getElementById('batchBadge');
       const track = document.getElementById('progressTrack');
       const fill = document.getElementById('progressFill');
 
+      showNotice(null);
+
       if (currentMode === 'user') {
         const username = document.getElementById('usernameInput').value.trim();
         if (!username) {
-          alert('Please enter a TikTok @username (e.g. @tokopedia or @aerostreet)');
+          showNotice('Please enter a TikTok @username (e.g. @mineralbotanica or @aerostreet).', 'error');
           return;
         }
 
         runBtn.disabled = true;
+        runBtn.textContent = 'Pulling Profile...';
         badge.textContent = 'Pulling Profile';
         badge.className = 'pill-badge pill-viral';
         track.style.display = 'block';
@@ -939,7 +960,7 @@
           const urls = profileData.videoUrls || [];
 
           if (urls.length === 0) {
-            alert(`No public video links found for ${username}. Try direct video URLs.`);
+            showNotice(`Profile @${profileData.username} reached (${(profileData.followerCount || 0).toLocaleString()} followers). TikTok restricted anonymous profile video lists — please paste direct video URLs in the Video URLs tab.`, 'info');
             return;
           }
 
@@ -947,6 +968,7 @@
           badge.textContent = `Scraping ${urls.length} Videos`;
 
           for (let i = 0; i < urls.length; i++) {
+            runBtn.textContent = `Scraping (${i + 1}/${urls.length})...`;
             const vRes = await fetch('/api', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
@@ -960,13 +982,15 @@
             renderLedger();
           }
         } catch (err) {
-          alert(`Profile scrape error: ${err.message}`);
+          showNotice(`Profile scrape error: ${err.message}`, 'error');
         } finally {
           runBtn.disabled = false;
+          runBtn.textContent = 'Run Video Analytics';
           badge.textContent = 'Completed';
           badge.className = 'pill-badge pill-standard';
           setTimeout(() => { track.style.display = 'none'; }, 1000);
           localStorage.setItem('tiktokSightSession', JSON.stringify(sessionData));
+          renderLedger();
         }
 
       } else {
@@ -975,47 +999,55 @@
         const urls = [...new Set(input.split('\n').map(u => u.trim()).filter(Boolean))];
 
         if (urls.length === 0) {
-          alert('Please enter at least one TikTok video URL, or click Load Sample Batch.');
+          showNotice('Please enter at least one TikTok video URL, or click Load Sample Batch.', 'error');
           return;
         }
 
         runBtn.disabled = true;
+        runBtn.textContent = 'Analyzing Batch...';
         badge.textContent = 'Processing';
         badge.className = 'pill-badge pill-viral';
         track.style.display = 'block';
         fill.style.transform = 'scaleX(0)';
 
-        for (let i = 0; i < urls.length; i++) {
-          const url = urls[i];
-          try {
-            const res = await fetch('/api', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ urls: [url] })
-            });
+        try {
+          for (let i = 0; i < urls.length; i++) {
+            const url = urls[i];
+            runBtn.textContent = `Scraping (${i + 1}/${urls.length})...`;
+            try {
+              const res = await fetch('/api', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ urls: [url] })
+              });
 
-            if (!res.ok) throw new Error(`API error ${res.status}: ${await res.text()}`);
+              if (!res.ok) throw new Error(`API error ${res.status}: ${await res.text()}`);
 
-            const data = await res.json();
-            if (Array.isArray(data) && data[0]) {
-              sessionData.push(data[0]);
-            } else {
-              sessionData.push({ url, error: 'Unexpected response schema' });
+              const data = await res.json();
+              if (Array.isArray(data) && data[0]) {
+                sessionData.push(data[0]);
+              } else {
+                sessionData.push({ url, error: 'Unexpected response schema' });
+              }
+            } catch (err) {
+              sessionData.push({ url, error: err.message || 'Scrape failed' });
             }
-          } catch (err) {
-            sessionData.push({ url, error: err.message || 'Scrape failed' });
-          }
 
-          const pct = (i + 1) / urls.length;
-          fill.style.transform = `scaleX(${pct})`;
+            const pct = (i + 1) / urls.length;
+            fill.style.transform = `scaleX(${pct})`;
+            renderLedger();
+          }
+        } catch (globalErr) {
+          showNotice(`Scrape batch error: ${globalErr.message}`, 'error');
+        } finally {
+          runBtn.disabled = false;
+          runBtn.textContent = 'Run Video Analytics';
+          badge.textContent = 'Completed';
+          badge.className = 'pill-badge pill-standard';
+          setTimeout(() => { track.style.display = 'none'; }, 1000);
+          localStorage.setItem('tiktokSightSession', JSON.stringify(sessionData));
           renderLedger();
         }
-
-        runBtn.disabled = false;
-        badge.textContent = 'Completed';
-        badge.className = 'pill-badge pill-standard';
-        setTimeout(() => { track.style.display = 'none'; }, 1000);
-        localStorage.setItem('tiktokSightSession', JSON.stringify(sessionData));
       }
     }
 
@@ -1187,17 +1219,28 @@
       if (e.target.id === 'battleModal') closeBattleModal();
     });
 
-    // Initial restore on load
+    // Initial restore on load: always ensure data is active immediately
     window.addEventListener('DOMContentLoaded', () => {
       const saved = localStorage.getItem('tiktokSightSession');
+      let restored = false;
       if (saved) {
         try {
-          sessionData = JSON.parse(saved);
-          renderLedger();
+          const parsed = JSON.parse(saved);
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            sessionData = parsed;
+            restored = true;
+          }
         } catch (e) {
           console.warn('Failed restoring session', e);
         }
       }
+
+      if (!restored) {
+        sessionData = JSON.parse(JSON.stringify(sampleDataset));
+        localStorage.setItem('tiktokSightSession', JSON.stringify(sessionData));
+      }
+
+      renderLedger();
     });
 
     window.openDetails = openDetails;
