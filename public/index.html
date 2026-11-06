@@ -3,11 +3,12 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="description" content="TiktokSight is a batch TikTok analytics intelligence tool for creators, affiliates, and agencies to audit engagement rates, save-to-view ratios, and campaign metrics.">
-  <title>TiktokSight: Video Analytics and Engagement Intelligence</title>
+  <meta name="description" content="Sorot by Secommercs: See the Pattern Behind Every Content. TikTok batch analytics, hook intelligence, and virality diagnostics.">
+  <title>Sorot by Secommercs: See the Pattern Behind Every Content</title>
+  <link rel="icon" type="image/png" href="./favicon.png">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Familjen+Grotesk:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Familjen+Grotesk:wght@500;600;700&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="./app.css">
   <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
 </head>
@@ -15,9 +16,10 @@
   <!-- Header Chrome -->
   <header class="site-header">
     <div class="container nav-container">
-      <a href="/" class="brand-group">
-        <span class="brand-symbol">TS</span>
-        <span class="brand-name">TiktokSight</span>
+      <a href="/" class="brand-group" aria-label="Sorot by Secommercs Home">
+        <img src="./brand/sorot-logo.png" alt="Sorot by Secommercs" class="brand-logo-img">
+        <div class="brand-divider" aria-hidden="true"></div>
+        <span class="brand-tagline">See the Pattern Behind Every Content.</span>
       </a>
       <div class="nav-actions">
         <button type="button" class="btn" id="exportBtn">Export XLSX</button>
@@ -313,8 +315,8 @@ https://www.tiktok.com/@tokopedia/video/7346129847192839102</textarea>
   <!-- Footer Chrome -->
   <footer class="site-footer">
     <div class="container footer-container">
-      <span>TiktokSight Intelligence Engine (Creators and Agencies)</span>
-      <span>Tokenized CSS | Zero AI Slop Compliant | Hallmark System</span>
+      <span>Sorot by Secommercs. See the Pattern Behind Every Content.</span>
+      <span>Anti-Slop Technical Register, Hallmark System</span>
     </div>
   </footer>
 
@@ -989,7 +991,7 @@ https://www.tiktok.com/@tokopedia/video/7346129847192839102</textarea>
           badge.textContent = 'Completed';
           badge.className = 'pill-badge pill-standard';
           setTimeout(() => { track.style.display = 'none'; }, 1000);
-          localStorage.setItem('tiktokSightSession', JSON.stringify(sessionData));
+          localStorage.setItem('sorotSession', JSON.stringify(sessionData));
           renderLedger();
         }
 
@@ -1045,7 +1047,7 @@ https://www.tiktok.com/@tokopedia/video/7346129847192839102</textarea>
           badge.textContent = 'Completed';
           badge.className = 'pill-badge pill-standard';
           setTimeout(() => { track.style.display = 'none'; }, 1000);
-          localStorage.setItem('tiktokSightSession', JSON.stringify(sessionData));
+          localStorage.setItem('sorotSession', JSON.stringify(sessionData));
           renderLedger();
         }
       }
@@ -1054,7 +1056,7 @@ https://www.tiktok.com/@tokopedia/video/7346129847192839102</textarea>
     function loadSampleBatch() {
       sessionData = JSON.parse(JSON.stringify(sampleDataset));
       selectedForCompare.clear();
-      localStorage.setItem('tiktokSightSession', JSON.stringify(sessionData));
+      localStorage.setItem('sorotSession', JSON.stringify(sessionData));
       renderLedger();
     }
 
@@ -1134,8 +1136,8 @@ https://www.tiktok.com/@tokopedia/video/7346129847192839102</textarea>
 
       const ws = XLSX.utils.aoa_to_sheet([headers, ...rows]);
       const wb = XLSX.utils.book_new();
-      XLSX.utils.book_append_sheet(wb, ws, 'TiktokSight_Analytics');
-      XLSX.writeFile(wb, `tiktoksight_audit_${new Date().toISOString().slice(0, 10)}.xlsx`);
+      XLSX.utils.book_append_sheet(wb, ws, 'Sorot_Analytics');
+      XLSX.writeFile(wb, `sorot_audit_${new Date().toISOString().slice(0, 10)}.xlsx`);
     }
 
     // Attach Event Listeners
@@ -1174,6 +1176,7 @@ https://www.tiktok.com/@tokopedia/video/7346129847192839102</textarea>
       if (confirm('Clear all session data?')) {
         sessionData = [];
         selectedForCompare.clear();
+        localStorage.removeItem('sorotSession');
         localStorage.removeItem('tiktokSightSession');
         renderLedger();
       }
@@ -1221,7 +1224,7 @@ https://www.tiktok.com/@tokopedia/video/7346129847192839102</textarea>
 
     // Initial restore on load: always ensure data is active immediately
     window.addEventListener('DOMContentLoaded', () => {
-      const saved = localStorage.getItem('tiktokSightSession');
+      const saved = localStorage.getItem('sorotSession') || localStorage.getItem('tiktokSightSession');
       let restored = false;
       if (saved) {
         try {
@@ -1237,7 +1240,7 @@ https://www.tiktok.com/@tokopedia/video/7346129847192839102</textarea>
 
       if (!restored) {
         sessionData = JSON.parse(JSON.stringify(sampleDataset));
-        localStorage.setItem('tiktokSightSession', JSON.stringify(sessionData));
+        localStorage.setItem('sorotSession', JSON.stringify(sessionData));
       }
 
       renderLedger();
