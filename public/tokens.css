@@ -15,6 +15,8 @@
   --color-graphite: oklch(21% 0.024 262); --color-graphite-2: oklch(26.5% 0.026 262); --color-graphite-ink: oklch(93% 0.010 250); --color-graphite-muted: oklch(69% 0.022 256);
   --color-accent: oklch(52% 0.16 150); --color-accent-2: oklch(76% 0.12 148); --color-accent-wash: oklch(96% 0.025 150); --color-accent-ink: oklch(98.6% 0.005 150); --color-focus: oklch(52% 0.16 150);
   --color-accent-deep: oklch(42% 0.17 150); --color-accent-edge: oklch(34% 0.14 152);
+  --color-badge-overlay: oklch(18% 0.02 260 / 0.85);
+  --color-warm-wash: oklch(96% 0.03 70); --color-warm-edge: oklch(75% 0.12 70); --color-warm-ink: oklch(40% 0.14 70);
   --color-glyph-1: oklch(89% 0.025 150); --color-glyph-2: oklch(81% 0.045 150); --color-glyph-3: oklch(70% 0.085 150); --color-glyph-4: oklch(60% 0.13 150);
   --color-graphite-glyph-1: oklch(33% 0.03 155); --color-graphite-glyph-2: oklch(41% 0.05 155); --color-graphite-glyph-3: oklch(53% 0.1 150);
   --color-key-face: oklch(99.4% 0.003 150); --color-key-edge: oklch(80% 0.016 150);
