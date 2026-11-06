@@ -113,7 +113,7 @@
                 id="usernameInput"
                 class="single-input"
                 placeholder="@mineralbotanica or @aerostreet"
-                value="@mineralbotanica"
+                value=""
                 aria-label="TikTok Creator Username"
               >
             </div>
@@ -661,13 +661,23 @@
       return { label: 'Statement / Brand', pillClass: 'pill-standard' };
     }
 
+    function parseCount(val) {
+      if (!val) return 0;
+      if (typeof val === 'number') return val;
+      const str = String(val).trim().toUpperCase();
+      if (str.endsWith('M')) return Math.round(parseFloat(str) * 1000000);
+      if (str.endsWith('K')) return Math.round(parseFloat(str) * 1000);
+      if (str.endsWith('B')) return Math.round(parseFloat(str) * 1000000000);
+      return parseInt(str.replace(/[^0-9]/g, ''), 10) || 0;
+    }
+
     // Intent Archetype and Metric Calculation
     function computeMetrics(item) {
-      const views = parseInt(item.views, 10) || 0;
-      const likes = parseInt(item.like, 10) || 0;
-      const comments = parseInt(item.comments, 10) || 0;
-      const shares = parseInt(item.share, 10) || 0;
-      const saves = parseInt(item.saves, 10) || 0;
+      const views = parseCount(item.views);
+      const likes = parseCount(item.like);
+      const comments = parseCount(item.comments);
+      const shares = parseCount(item.share);
+      const saves = parseCount(item.saves);
 
       const totalInteractions = likes + comments + shares + saves;
       const er = views > 0 ? (totalInteractions / views) * 100 : 0;
@@ -1023,10 +1033,10 @@
       }
 
       if (auditSampleBtn) {
-        const sampleList = data.sampleVideos || (data.videoUrls && data.videoUrls.length > 0 ? data.videoUrls : []);
+        const sampleList = (data.videoUrls && data.videoUrls.length > 0) ? data.videoUrls : (data.sampleVideos || []);
         if (sampleList && sampleList.length > 0) {
           auditSampleBtn.style.display = 'inline-flex';
-          auditSampleBtn.textContent = `Audit Sample Video (${sampleList.length} Post)`;
+          auditSampleBtn.textContent = `Audit Semua Video (${sampleList.length} Post)`;
           auditSampleBtn.onclick = () => {
             document.getElementById('modeUrlBtn').click();
             const urlInput = document.getElementById('urlInput');
@@ -1437,27 +1447,38 @@
 
           renderCreatorCard(profileData);
 
-          if (profileData.isRestrictedList) {
+          // Immediately display all video cards extracted directly from the profile!
+          if (profileData.videoItems && profileData.videoItems.length > 0) {
+            sessionData = profileData.videoItems;
+            renderLedger();
+            showNotice(`Ditemukan ${profileData.videoItems.length} video dari @${profileData.username}! Sedang memperkaya data analitik interaksi video...`, 'info');
+          }
+
+          const allUrls = profileData.videoUrls || [];
+
+          if (profileData.isRestrictedList && allUrls.length === 0) {
             if (profileData.hasSampleVideos) {
-              showNotice(`Profil @${profileData.username} berhasil diverifikasi (${(profileData.followerCount || 0).toLocaleString()} followers, ${(profileData.videoCount || 0).toLocaleString()} video). TikTok membatasi crawling feed video publik tanpa login: klik tombol "Audit Sample Video" di atas atau tempel link video spesifik.`, 'info');
+              showNotice(`Profil @${profileData.username} berhasil diverifikasi (${(profileData.followerCount || 0).toLocaleString()} followers). TikTok membatasi crawling feed video publik tanpa login: klik tombol "Audit Semua Video" di atas atau tempel link video spesifik.`, 'info');
             } else {
-              showNotice(`Profil @${profileData.username} berhasil diverifikasi (${(profileData.followerCount || 0).toLocaleString()} followers, ${(profileData.videoCount || 0).toLocaleString()} video). TikTok membatasi feed video tanpa login: silakan tempel link video spesifik di tab Video URLs.`, 'info');
+              showNotice(`Profil @${profileData.username} berhasil diverifikasi (${(profileData.followerCount || 0).toLocaleString()} followers). TikTok membatasi feed video tanpa login: silakan tempel link video spesifik di tab Video URLs.`, 'info');
             }
             return;
           }
 
-          const urls = profileData.videoUrls || [];
-
-          if (urls.length === 0) {
+          if (allUrls.length === 0) {
             showNotice(`Profil @${profileData.username} terverifikasi. Tidak ada video yang ditemukan. Silakan tempel link video spesifik di tab Video URLs.`, 'info');
             return;
           }
 
-          fill.style.transform = 'scaleX(0.4)';
-          badge.textContent = `Scraping ${urls.length} Videos`;
+          // Enforce 6 videos for deep audit to stay lightning fast
+          const batchCount = Math.min(allUrls.length, 6);
+          const urls = allUrls.slice(0, batchCount);
+
+          fill.style.transform = 'scaleX(0.3)';
+          badge.textContent = `Auditing ${urls.length} Videos`;
 
           for (let i = 0; i < urls.length; i++) {
-            runBtn.textContent = `Scraping (${i + 1}/${urls.length})...`;
+            runBtn.textContent = `Auditing (${i + 1}/${urls.length})...`;
             const vRes = await fetch('/api', {
               method: 'POST',
               headers: {
@@ -1479,10 +1500,16 @@
 
             const vData = await vRes.json();
             if (Array.isArray(vData) && vData[0]) {
-              sessionData.push(vData[0]);
+              const enriched = vData[0];
+              const idx = sessionData.findIndex(item => item.videoId === enriched.videoId || item.videoUrl === enriched.videoUrl);
+              if (idx !== -1) {
+                sessionData[idx] = enriched;
+              } else {
+                sessionData.push(enriched);
+              }
+              renderLedger();
             }
-            fill.style.transform = `scaleX(${0.4 + (0.6 * ((i + 1) / urls.length))})`;
-            renderLedger();
+            fill.style.transform = `scaleX(${0.3 + (0.7 * ((i + 1) / urls.length))})`;
           }
         } catch (err) {
           showNotice(`Profile scrape error: ${err.message}`, 'error');

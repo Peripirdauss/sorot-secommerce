@@ -79,19 +79,24 @@ async function getTikTokData(url) {
         const page = await browser.newPage();
         console.log(`[${node.id}] Page created, navigating to:`, url);
 
-        // Stealth and viewport configuration
+        // Viewport configuration (Browserless native stealth provides matched UA and client hints)
         await page.setViewport({ width: 1280, height: 800 });
-        await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36');
 
-        await page.evaluateOnNewDocument(() => {
-          Object.defineProperty(navigator, 'webdriver', { get: () => false });
-          Object.defineProperty(navigator, 'languages', { get: () => ['en-US', 'en'] });
-          Object.defineProperty(navigator, 'plugins', { get: () => [1, 2, 3, 4, 5] });
-        });
+        // Block media streaming to accelerate extraction speed
+        try {
+          await page.setRequestInterception(true);
+          page.on('request', req => {
+            if (['media', 'font'].includes(req.resourceType())) {
+              req.abort();
+            } else {
+              req.continue();
+            }
+          });
+        } catch (e) {}
 
         await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 35000 });
         console.log(`[${node.id}] Page loaded, waiting for rehydration...`);
-        await delay(2500);
+        await delay(2000);
 
         console.log(`[${node.id}] Extracting data...`);
         const mainData = await page.evaluate(() => {
@@ -104,9 +109,8 @@ async function getTikTokData(url) {
           }
 
           if (!jsonData) {
-            const scripts = Array.from(document.getElementsByTagName('script'));
-            const sigiScript = scripts.find(s => s.textContent?.includes('__DEFAULT_SCOPE__'));
-            if (sigiScript) {
+            const sigiScript = document.getElementById('SIGI_STATE') || document.getElementById('__NEXT_DATA__');
+            if (sigiScript && sigiScript.textContent) {
               try {
                 jsonData = JSON.parse(sigiScript.textContent);
               } catch (e) {}
@@ -197,7 +201,7 @@ async function getTikTokUserVideos(username) {
   } else if (cleanUser.includes('tiktok.com/')) {
     cleanUser = cleanUser.split('tiktok.com/')[1].split('/')[0].split('?')[0];
   }
-  cleanUser = cleanUser.replace(/^@/, '').trim();
+  cleanUser = cleanUser.replace(/@+/g, '').trim();
 
   const profileUrl = `https://www.tiktok.com/@${cleanUser}`;
   const sampleVideos = KNOWN_CREATOR_SAMPLES[cleanUser.toLowerCase()] || [];
@@ -213,17 +217,15 @@ async function getTikTokUserVideos(username) {
         });
 
         const page = await browser.newPage();
-        await page.setViewport({ width: 1280, height: 800 });
-        await page.setUserAgent('Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36');
+        await page.setViewport({ width: 1280, height: 900 });
 
-        await page.evaluateOnNewDocument(() => {
-          Object.defineProperty(navigator, 'webdriver', { get: () => false });
-          Object.defineProperty(navigator, 'languages', { get: () => ['en-US', 'en'] });
-          Object.defineProperty(navigator, 'plugins', { get: () => [1, 2, 3, 4, 5] });
-        });
-
-        await page.goto(profileUrl, { waitUntil: 'domcontentloaded', timeout: 35000 });
-        await delay(3000);
+        // Let Browserless native stealth handle UA and fingerprinting
+        try {
+          await page.goto(profileUrl, { waitUntil: 'networkidle2', timeout: 35000 });
+        } catch (e) {
+          await page.goto(profileUrl, { waitUntil: 'domcontentloaded', timeout: 20000 }).catch(() => {});
+        }
+        await delay(3500);
 
         const profileData = await page.evaluate((uname) => {
           let stats = {};
@@ -242,9 +244,48 @@ async function getTikTokUserVideos(username) {
             } catch (e) {}
           }
 
+          // Extract all video cards directly from profile DOM
           const links = Array.from(document.querySelectorAll('a[href*="/video/"]'));
-          const hrefs = links.map(a => a.href).filter(href => href.includes('/video/'));
-          const unique = [...new Set(hrefs)].slice(0, 12);
+          const seen = new Set();
+          const videoItems = [];
+
+          for (const a of links) {
+            const href = (a.href || '').split('?')[0];
+            if (!href.includes('/video/') || seen.has(href)) continue;
+            seen.add(href);
+
+            const img = a.querySelector('img');
+            const cover = img ? (img.src || img.getAttribute('data-src') || '') : '';
+            const alt = img ? (img.alt || '') : '';
+            const parent = a.closest('[data-e2e="user-post-item"]') || a.parentElement;
+            const viewMatch = parent ? parent.innerText.match(/([0-9.]+[KMBkmb]?)/) : null;
+            const viewText = viewMatch ? viewMatch[1] : '0';
+
+            const videoId = href.split('/video/')[1] || '';
+
+            videoItems.push({
+              videoId,
+              videoUrl: href,
+              cover,
+              title: alt,
+              description: alt,
+              views: viewText,
+              like: '0',
+              saves: '0',
+              share: '0',
+              comments: '0',
+              authorUniqueId: uname,
+              authorNickname: user.nickname || uname,
+              authorAvatar: user.avatarLarger || user.avatarMedium || user.avatarThumb || '',
+              duration: 0,
+              isAD: alt.toLowerCase().includes('#ad') || alt.toLowerCase().includes('#sponsored'),
+              isProfilePreview: true
+            });
+
+            if (videoItems.length >= 24) break;
+          }
+
+          const unique = videoItems.map(v => v.videoUrl);
 
           return {
             nickname: user.nickname || uname,
@@ -258,13 +299,14 @@ async function getTikTokUserVideos(username) {
             heartCount: Number(statsV2.heartCount || stats.heartCount || stats.heart || 0),
             videoCount: Number(statsV2.videoCount || stats.videoCount || 0),
             followingCount: Number(statsV2.followingCount || stats.followingCount || 0),
-            videoUrls: unique
+            videoUrls: unique,
+            videoItems
           };
         }, cleanUser);
 
         await page.close();
 
-        const finalUrls = profileData.videoUrls && profileData.videoUrls.length > 0
+        const finalUrls = (profileData.videoUrls && profileData.videoUrls.length > 0)
           ? profileData.videoUrls
           : sampleVideos;
 
@@ -283,9 +325,10 @@ async function getTikTokUserVideos(username) {
           videoCount: profileData.videoCount,
           followingCount: profileData.followingCount,
           videoUrls: finalUrls,
+          videoItems: profileData.videoItems || [],
           sampleVideos,
           hasSampleVideos: sampleVideos.length > 0,
-          isRestrictedList: !profileData.videoUrls || profileData.videoUrls.length === 0
+          isRestrictedList: finalUrls.length === 0
         };
       } finally {
         if (browser) {

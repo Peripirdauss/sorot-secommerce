@@ -141,7 +141,7 @@ class BrowserlessPool {
         token,
         maskedToken,
         wsBase,
-        wsEndpoint: `${wsBase}?token=${encodeURIComponent(token)}&stealth=true`,
+        wsEndpoint: `${wsBase}?token=${encodeURIComponent(token)}&stealth`,
         status: existing?.status || 'HEALTHY',
         totalRequests: existing?.totalRequests || 0,
         totalSuccesses: existing?.totalSuccesses || 0,
