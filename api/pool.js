@@ -1,8 +1,51 @@
 const puppeteer = require("puppeteer");
+const fs = require('fs');
+const path = require('path');
+
+/**
+ * Helper to parse a token string with optional custom account name.
+ * Supported formats:
+ * - "Akun Pribadi | tok_12345"
+ * - "Akun Kantor : tok_12345"
+ * - "tok_12345" (defaults to "Akun <index>")
+ */
+function parseTokenEntry(raw, defaultIndex = 0) {
+  if (typeof raw === 'object' && raw !== null) {
+    const name = (raw.name || '').trim() || `Akun ${defaultIndex + 1}`;
+    const token = (raw.token || '').trim();
+    return token ? { name, token } : null;
+  }
+
+  const trimmed = (raw || '').trim();
+  if (!trimmed) return null;
+
+  let name = `Akun ${defaultIndex + 1}`;
+  let token = trimmed;
+
+  if (trimmed.includes('|')) {
+    const parts = trimmed.split('|');
+    const potentialName = parts[0].trim();
+    const potentialToken = parts.slice(1).join('|').trim();
+    if (potentialToken) {
+      name = potentialName || name;
+      token = potentialToken;
+    }
+  } else if (trimmed.includes(':') && !/^(https?|wss?):\/\//i.test(trimmed)) {
+    const colonIdx = trimmed.indexOf(':');
+    const potentialName = trimmed.slice(0, colonIdx).trim();
+    const potentialToken = trimmed.slice(colonIdx + 1).trim();
+    if (potentialToken) {
+      name = potentialName || name;
+      token = potentialToken;
+    }
+  }
+
+  return { name, token };
+}
 
 /**
  * BrowserlessPool
- * Multi-Token Round-Robin Load Balancer & Automatic Fallback Engine
+ * Multi-Token Round-Robin Load Balancer, Account Alias Manager & Resilient Failover Engine
  * Designed for Sorot by Secommercs
  */
 class BrowserlessPool {
@@ -15,27 +58,22 @@ class BrowserlessPool {
   }
 
   /**
-   * Discovers and parses tokens from various environment configurations:
-   * - BROWSERLESS_TOKENS (comma, space, or newline separated)
-   * - BROWSERLESS_TOKEN (single or comma-separated)
-   * - BROWSERLESS_TOKEN_1, BROWSERLESS_TOKEN_2, ...
+   * Discovers and parses tokens from .env file or environment variables.
+   * Extracts account labels and tokens.
    */
   loadTokens() {
     const rawList = [];
-    const fs = require('fs');
-    const path = require('path');
     const envPath = path.resolve(__dirname, '../.env');
 
-    // Parse directly from .env file to ensure exact disk synchronization
     if (fs.existsSync(envPath)) {
       try {
         const dotenv = require('dotenv');
         const envConfig = dotenv.parse(fs.readFileSync(envPath, 'utf8'));
         if (envConfig.BROWSERLESS_TOKENS) {
-          rawList.push(...envConfig.BROWSERLESS_TOKENS.split(/[\s,]+/));
+          rawList.push(...envConfig.BROWSERLESS_TOKENS.split(/[\r\n,]+/));
         }
         if (envConfig.BROWSERLESS_TOKEN) {
-          rawList.push(...envConfig.BROWSERLESS_TOKEN.split(/[\s,]+/));
+          rawList.push(...envConfig.BROWSERLESS_TOKEN.split(/[\r\n,]+/));
         }
         for (let i = 1; i <= 30; i++) {
           if (envConfig[`BROWSERLESS_TOKEN_${i}`]) {
@@ -50,13 +88,12 @@ class BrowserlessPool {
       }
     }
 
-    // Fallback to process.env if file did not contain tokens
     if (rawList.length === 0) {
       if (process.env.BROWSERLESS_TOKENS) {
-        rawList.push(...process.env.BROWSERLESS_TOKENS.split(/[\s,]+/));
+        rawList.push(...process.env.BROWSERLESS_TOKENS.split(/[\r\n,]+/));
       }
       if (process.env.BROWSERLESS_TOKEN) {
-        rawList.push(...process.env.BROWSERLESS_TOKEN.split(/[\s,]+/));
+        rawList.push(...process.env.BROWSERLESS_TOKEN.split(/[\r\n,]+/));
       }
       for (let i = 1; i <= 30; i++) {
         const indexed = process.env[`BROWSERLESS_TOKEN_${i}`];
@@ -64,26 +101,31 @@ class BrowserlessPool {
       }
     }
 
-    // Sanitize and deduplicate
-    const uniqueTokens = [...new Set(
-      rawList
-        .map(t => (t || '').trim())
-        .filter(t => t.length > 0 && !t.startsWith('#'))
-    )];
+    // Parse into structured { name, token } objects and deduplicate by token
+    const parsedEntries = [];
+    const seenTokens = new Set();
+
+    rawList.forEach((raw, idx) => {
+      const parsed = parseTokenEntry(raw, idx);
+      if (parsed && parsed.token && !seenTokens.has(parsed.token)) {
+        seenTokens.add(parsed.token);
+        parsedEntries.push(parsed);
+      }
+    });
 
     const defaultHost = process.env.BROWSERLESS_HOST || 'wss://chrome.browserless.io';
 
-    this.nodes = uniqueTokens.map((tokenOrUrl, idx) => {
-      let token = tokenOrUrl;
+    this.nodes = parsedEntries.map((entry, idx) => {
+      let token = entry.token;
       let wsBase = defaultHost;
 
       // Handle full WebSocket endpoints if specified
-      if (tokenOrUrl.startsWith('ws://') || tokenOrUrl.startsWith('wss://')) {
+      if (token.startsWith('ws://') || token.startsWith('wss://')) {
         try {
-          const parsed = new URL(tokenOrUrl);
-          const qToken = parsed.searchParams.get('token');
+          const parsedUrl = new URL(token);
+          const qToken = parsedUrl.searchParams.get('token');
           if (qToken) token = qToken;
-          wsBase = `${parsed.protocol}//${parsed.host}${parsed.pathname}`;
+          wsBase = `${parsedUrl.protocol}//${parsedUrl.host}${parsedUrl.pathname}`;
         } catch (e) {}
       }
 
@@ -91,11 +133,11 @@ class BrowserlessPool {
         ? `${token.slice(0, 4)}...${token.slice(-4)}`
         : `token-${idx + 1}`;
 
-      // Preserve existing metrics if node is being reloaded
       const existing = this.nodes.find(n => n.token === token);
 
       return {
         id: `node-${idx + 1}`,
+        name: entry.name || `Akun ${idx + 1}`,
         token,
         maskedToken,
         wsBase,
@@ -114,126 +156,118 @@ class BrowserlessPool {
 
     console.log(
       `[BrowserlessPool] Active Pool Size: ${this.nodes.length} token node(s):`,
-      this.nodes.map(n => `${n.id} (${n.maskedToken})`).join(', ') || 'NONE'
+      this.nodes.map(n => `${n.id} [${n.name}] (${n.maskedToken})`).join(', ') || 'NONE'
     );
   }
 
   /**
-   * Round-Robin Node Selector with Circuit-Breaker Awareness
+   * Persists items to .env file preserving custom account names
    */
-  getNextNode(excludeNodeIds = new Set()) {
-    if (this.nodes.length === 0) {
-      throw new Error('No Browserless tokens configured. Set BROWSERLESS_TOKENS or BROWSERLESS_TOKEN in .env');
+  saveTokensToEnv(items) {
+    const envPath = path.resolve(__dirname, '../.env');
+    let content = '';
+    if (fs.existsSync(envPath)) {
+      content = fs.readFileSync(envPath, 'utf8');
     }
 
-    const now = Date.now();
-    const availableNodes = this.nodes.filter(n => !excludeNodeIds.has(n.id));
-    if (availableNodes.length === 0) {
-      return null;
-    }
-
-    for (let i = 0; i < availableNodes.length; i++) {
-      const node = availableNodes[(this.currentIndex + i) % availableNodes.length];
-
-      // Check if cooldown expired
-      if (node.status === 'COOLDOWN') {
-        if (now >= node.cooldownUntil) {
-          console.log(`[BrowserlessPool] Cooldown elapsed for ${node.id} (${node.maskedToken}). Probing...`);
-          node.status = 'HEALTHY';
-          node.consecutiveFailures = 0;
-          this.currentIndex = (this.currentIndex + i + 1) % availableNodes.length;
-          return node;
-        }
-        continue;
+    const formattedList = items.map((item, idx) => {
+      if (typeof item === 'object' && item !== null) {
+        const name = (item.name || '').trim() || `Akun ${idx + 1}`;
+        const tok = (item.token || '').trim();
+        return `${name} | ${tok}`;
       }
+      return String(item).trim();
+    });
 
-      // Found healthy node
-      this.currentIndex = (this.currentIndex + i + 1) % availableNodes.length;
-      return node;
+    const combinedStr = formattedList.join(', ');
+    if (/^BROWSERLESS_TOKENS=.*$/m.test(content)) {
+      content = content.replace(/^BROWSERLESS_TOKENS=.*$/m, `BROWSERLESS_TOKENS="${combinedStr}"`);
+    } else if (/^BROWSERLESS_TOKEN=.*$/m.test(content)) {
+      content = content.replace(/^BROWSERLESS_TOKEN=.*$/m, `BROWSERLESS_TOKENS="${combinedStr}"`);
+    } else {
+      content += (content.endsWith('\n') ? '' : '\n') + `BROWSERLESS_TOKENS="${combinedStr}"\n`;
     }
 
-    // Emergency fallback if all candidates are in cooldown: pick the one closest to recovery
-    const sorted = [...availableNodes].sort((a, b) => a.cooldownUntil - b.cooldownUntil);
-    const emergencyNode = sorted[0];
-    console.warn(`[BrowserlessPool] All nodes currently cooling down. Forcing probe on ${emergencyNode.id} (${emergencyNode.maskedToken})`);
-    return emergencyNode;
+    if (!/^ADMIN_SECRET_CODE=.*$/m.test(content)) {
+      const adminCode = process.env.ADMIN_SECRET_CODE || 'sorotganteng';
+      content += `ADMIN_SECRET_CODE="${adminCode}"\n`;
+    }
+
+    fs.writeFileSync(envPath, content, 'utf8');
+    process.env.BROWSERLESS_TOKENS = combinedStr;
   }
 
   /**
-   * Execute task with automatic retry and failover across pool nodes
+   * Updates an existing node's custom account name/alias
    */
-  async executeWithFallback(actionFn, metadata = {}) {
-    const triedNodeIds = new Set();
-    const maxAttempts = Math.min(this.nodes.length || 1, 6);
-    const failureHistory = [];
+  updateTokenName(targetIdOrToken, newName) {
+    const node = this.nodes.find(n => n.id === targetIdOrToken || n.token === targetIdOrToken);
+    if (!node) {
+      throw new Error(`Token atau node "${targetIdOrToken}" tidak ditemukan`);
+    }
 
-    for (let attempt = 1; attempt <= maxAttempts; attempt++) {
-      const node = this.getNextNode(triedNodeIds);
-      if (!node) {
-        break;
+    const cleanName = (newName || '').trim();
+    if (cleanName) {
+      node.name = cleanName;
+    }
+
+    this.saveTokensToEnv(this.nodes.map(n => ({ name: n.name, token: n.token })));
+    return { ok: true, node };
+  }
+
+  /**
+   * Adds new token(s) to the pool and persists to .env
+   */
+  addTokens(newTokensList) {
+    const currentItems = this.nodes.map(n => ({ name: n.name, token: n.token }));
+    const added = [];
+
+    for (let i = 0; i < newTokensList.length; i++) {
+      const raw = newTokensList[i];
+      let parsed;
+      if (typeof raw === 'object' && raw !== null) {
+        parsed = {
+          name: (raw.name || '').trim() || `Akun ${currentItems.length + 1}`,
+          token: (raw.token || '').trim()
+        };
+      } else {
+        parsed = parseTokenEntry(raw, currentItems.length);
       }
 
-      triedNodeIds.add(node.id);
-      node.totalRequests++;
+      if (!parsed || !parsed.token) continue;
 
-      const logPrefix = `[BrowserlessPool] [Attempt ${attempt}/${maxAttempts}] Node ${node.id} (${node.maskedToken})`;
-      console.log(`${logPrefix} -> Executing for: ${metadata.url || metadata.job || 'task'}`);
-
-      const startTime = Date.now();
-      try {
-        const result = await actionFn(node, { attempt, maxAttempts });
-
-        // Success metrics
-        const elapsed = Date.now() - startTime;
-        node.totalSuccesses++;
-        node.consecutiveFailures = 0;
-        node.status = 'HEALTHY';
-        node.lastSuccessTime = Date.now();
-
-        console.log(`${logPrefix} -> SUCCESS (${elapsed}ms)`);
-
-        if (result && typeof result === 'object' && !Array.isArray(result)) {
-          result._poolMeta = {
-            nodeId: node.id,
-            maskedToken: node.maskedToken,
-            attempt,
-            totalFailovers: attempt - 1,
-            elapsedMs: elapsed
-          };
+      const existing = currentItems.find(item => item.token === parsed.token);
+      if (existing) {
+        if (parsed.name && parsed.name !== existing.name) {
+          existing.name = parsed.name;
         }
-
-        return result;
-      } catch (err) {
-        const elapsed = Date.now() - startTime;
-        node.totalFailures++;
-        node.consecutiveFailures++;
-        node.lastFailureTime = Date.now();
-        node.lastError = err.message;
-
-        failureHistory.push({
-          nodeId: node.id,
-          maskedToken: node.maskedToken,
-          error: err.message,
-          elapsedMs: elapsed
-        });
-
-        console.error(`${logPrefix} -> FAILED (${elapsed}ms): ${err.message}`);
-
-        // Circuit breaker: Trip into COOLDOWN if threshold reached
-        if (node.consecutiveFailures >= this.maxConsecutiveFailures) {
-          node.status = 'COOLDOWN';
-          node.cooldownUntil = Date.now() + this.cooldownMs;
-          console.warn(`[BrowserlessPool] Node ${node.id} (${node.maskedToken}) tripped into COOLDOWN for ${this.cooldownMs / 1000}s`);
-        }
-
-        if (attempt < maxAttempts) {
-          console.log(`[BrowserlessPool] Retrying with next available node in pool...`);
-        }
+      } else {
+        currentItems.push(parsed);
+        added.push(parsed);
       }
     }
 
-    const summary = failureHistory.map(f => `${f.nodeId}: ${f.error}`).join(' | ');
-    throw new Error(`Browserless pool exhausted (${failureHistory.length} node(s) failed): ${summary}`);
+    this.saveTokensToEnv(currentItems);
+    this.loadTokens();
+    return { added, total: this.nodes.length, nodes: this.nodes };
+  }
+
+  /**
+   * Removes a token from the pool and persists to .env
+   */
+  removeToken(tokenIdOrToken) {
+    const targetNode = this.nodes.find(n => n.id === tokenIdOrToken || n.token === tokenIdOrToken);
+    if (!targetNode) {
+      throw new Error(`Token atau node ${tokenIdOrToken} tidak ditemukan di pool`);
+    }
+
+    const remaining = this.nodes
+      .filter(n => n.id !== targetNode.id)
+      .map(n => ({ name: n.name, token: n.token }));
+
+    this.saveTokensToEnv(remaining);
+    this.loadTokens();
+    return { removedId: targetNode.id, remaining: this.nodes.length };
   }
 
   /**
@@ -264,75 +298,118 @@ class BrowserlessPool {
   }
 
   /**
-   * Persists tokens array to .env file and updates process.env
+   * Round-Robin Node Selector with Circuit-Breaker Awareness
    */
-  saveTokensToEnv(tokens) {
-    const fs = require('fs');
-    const path = require('path');
-    const envPath = path.resolve(__dirname, '../.env');
-    let content = '';
-    if (fs.existsSync(envPath)) {
-      content = fs.readFileSync(envPath, 'utf8');
+  getNextNode(excludeNodeIds = new Set()) {
+    if (this.nodes.length === 0) {
+      throw new Error('No Browserless tokens configured. Set BROWSERLESS_TOKENS or BROWSERLESS_TOKEN in .env');
     }
 
-    const tokenStr = tokens.join(', ');
-    if (/^BROWSERLESS_TOKENS=.*$/m.test(content)) {
-      content = content.replace(/^BROWSERLESS_TOKENS=.*$/m, `BROWSERLESS_TOKENS="${tokenStr}"`);
-    } else if (/^BROWSERLESS_TOKEN=.*$/m.test(content)) {
-      content = content.replace(/^BROWSERLESS_TOKEN=.*$/m, `BROWSERLESS_TOKENS="${tokenStr}"`);
-    } else {
-      content += (content.endsWith('\n') ? '' : '\n') + `BROWSERLESS_TOKENS="${tokenStr}"\n`;
+    const now = Date.now();
+    const availableNodes = this.nodes.filter(n => !excludeNodeIds.has(n.id));
+    if (availableNodes.length === 0) {
+      return null;
     }
 
-    if (!/^ADMIN_SECRET_CODE=.*$/m.test(content)) {
-      const adminCode = process.env.ADMIN_SECRET_CODE || 'sorotganteng';
-      content += `ADMIN_SECRET_CODE="${adminCode}"\n`;
+    for (let i = 0; i < availableNodes.length; i++) {
+      const node = availableNodes[(this.currentIndex + i) % availableNodes.length];
+
+      if (node.status === 'COOLDOWN') {
+        if (now >= node.cooldownUntil) {
+          console.log(`[BrowserlessPool] Cooldown elapsed for ${node.id} (${node.name} - ${node.maskedToken}). Probing...`);
+          node.status = 'HEALTHY';
+          node.consecutiveFailures = 0;
+          this.currentIndex = (this.currentIndex + i + 1) % availableNodes.length;
+          return node;
+        }
+        continue;
+      }
+
+      this.currentIndex = (this.currentIndex + i + 1) % availableNodes.length;
+      return node;
     }
 
-    fs.writeFileSync(envPath, content, 'utf8');
-    process.env.BROWSERLESS_TOKENS = tokenStr;
+    const sorted = [...availableNodes].sort((a, b) => a.cooldownUntil - b.cooldownUntil);
+    const emergencyNode = sorted[0];
+    console.warn(`[BrowserlessPool] All nodes currently cooling down. Forcing probe on ${emergencyNode.id} (${emergencyNode.name} - ${emergencyNode.maskedToken})`);
+    return emergencyNode;
   }
 
   /**
-   * Adds new token(s) to the pool and persists to .env
+   * Execute task with automatic retry and failover across pool nodes
    */
-  addTokens(newTokensList) {
-    const currentTokens = this.nodes.map(n => n.token);
-    const added = [];
+  async executeWithFallback(actionFn, metadata = {}) {
+    const triedNodeIds = new Set();
+    const maxAttempts = Math.min(this.nodes.length || 1, 6);
+    const failureHistory = [];
 
-    for (const raw of newTokensList) {
-      const cleaned = (raw || '').trim();
-      if (cleaned && !currentTokens.includes(cleaned)) {
-        currentTokens.push(cleaned);
-        added.push(cleaned);
+    for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+      const node = this.getNextNode(triedNodeIds);
+      if (!node) {
+        break;
+      }
+
+      triedNodeIds.add(node.id);
+      node.totalRequests++;
+
+      const logPrefix = `[BrowserlessPool] [Attempt ${attempt}/${maxAttempts}] Node ${node.id} [${node.name}] (${node.maskedToken})`;
+      console.log(`${logPrefix} -> Executing for: ${metadata.url || metadata.job || 'task'}`);
+
+      const startTime = Date.now();
+      try {
+        const result = await actionFn(node, { attempt, maxAttempts });
+
+        const elapsed = Date.now() - startTime;
+        node.totalSuccesses++;
+        node.consecutiveFailures = 0;
+        node.status = 'HEALTHY';
+        node.lastSuccessTime = Date.now();
+
+        console.log(`${logPrefix} -> SUCCESS (${elapsed}ms)`);
+
+        if (result && typeof result === 'object' && !Array.isArray(result)) {
+          result._poolMeta = {
+            nodeId: node.id,
+            nodeName: node.name,
+            maskedToken: node.maskedToken,
+            attempt,
+            totalFailovers: attempt - 1,
+            elapsedMs: elapsed
+          };
+        }
+
+        return result;
+      } catch (err) {
+        const elapsed = Date.now() - startTime;
+        node.totalFailures++;
+        node.consecutiveFailures++;
+        node.lastFailureTime = Date.now();
+        node.lastError = err.message;
+
+        failureHistory.push({
+          nodeId: node.id,
+          nodeName: node.name,
+          maskedToken: node.maskedToken,
+          error: err.message,
+          elapsedMs: elapsed
+        });
+
+        console.error(`${logPrefix} -> FAILED (${elapsed}ms): ${err.message}`);
+
+        if (node.consecutiveFailures >= this.maxConsecutiveFailures) {
+          node.status = 'COOLDOWN';
+          node.cooldownUntil = Date.now() + this.cooldownMs;
+          console.warn(`[BrowserlessPool] Node ${node.id} [${node.name}] (${node.maskedToken}) tripped into COOLDOWN for ${this.cooldownMs / 1000}s`);
+        }
+
+        if (attempt < maxAttempts) {
+          console.log(`[BrowserlessPool] Retrying with next available node in pool...`);
+        }
       }
     }
 
-    if (added.length > 0) {
-      this.saveTokensToEnv(currentTokens);
-      this.loadTokens();
-    }
-
-    return { added, total: this.nodes.length, nodes: this.nodes };
-  }
-
-  /**
-   * Removes a token from the pool and persists to .env
-   */
-  removeToken(tokenIdOrToken) {
-    const targetNode = this.nodes.find(n => n.id === tokenIdOrToken || n.token === tokenIdOrToken);
-    if (!targetNode) {
-      throw new Error(`Token ${tokenIdOrToken} not found in pool`);
-    }
-
-    const remainingTokens = this.nodes
-      .filter(n => n.id !== targetNode.id)
-      .map(n => n.token);
-
-    this.saveTokensToEnv(remainingTokens);
-    this.loadTokens();
-
-    return { removedId: targetNode.id, remaining: this.nodes.length };
+    const summary = failureHistory.map(f => `${f.nodeId} [${f.nodeName}]: ${f.error}`).join(' | ');
+    throw new Error(`Browserless pool exhausted (${failureHistory.length} node(s) failed): ${summary}`);
   }
 
   /**
@@ -347,6 +424,7 @@ class BrowserlessPool {
       currentIndex: this.currentIndex,
       nodes: this.nodes.map(n => ({
         id: n.id,
+        name: n.name || `Akun ${n.id.replace('node-', '')}`,
         maskedToken: n.maskedToken,
         token: isAdmin ? n.token : undefined,
         status: n.status === 'COOLDOWN' && now >= n.cooldownUntil ? 'RECOVERING' : n.status,
@@ -363,4 +441,3 @@ class BrowserlessPool {
 }
 
 module.exports = new BrowserlessPool();
-

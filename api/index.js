@@ -346,12 +346,17 @@ module.exports = async (req, res) => {
       });
     }
 
-    // 3. Add new token(s)
+    // 3. Add new token(s) with optional custom name
     if (parsed.pathname === '/api/admin/tokens' && req.method === 'POST') {
-      const rawTokens = body?.tokens || body?.token || [];
-      const tokenList = Array.isArray(rawTokens)
-        ? rawTokens
-        : String(rawTokens).split(/[\s,]+/);
+      let tokenList = [];
+      if (body?.token && body?.name) {
+        tokenList = [{ name: body.name.trim(), token: body.token.trim() }];
+      } else if (body?.tokens) {
+        const rawTokens = Array.isArray(body.tokens) ? body.tokens : String(body.tokens).split(/[\r\n,]+/);
+        tokenList = rawTokens.map(t => (t || '').trim()).filter(Boolean);
+      } else if (body?.token) {
+        tokenList = [body.token.trim()];
+      }
 
       const result = pool.addTokens(tokenList);
       return res.status(200).json({
@@ -362,7 +367,26 @@ module.exports = async (req, res) => {
       });
     }
 
-    // 4. Delete token
+    // 4. Update custom account name/alias
+    if (parsed.pathname === '/api/admin/tokens' && req.method === 'PATCH') {
+      const target = body?.id || body?.token;
+      const newName = body?.name;
+      if (!target || !newName) {
+        return res.status(400).json({ error: 'Target node ID/token dan nama baru wajib diisi' });
+      }
+      try {
+        pool.updateTokenName(target, newName);
+        return res.status(200).json({
+          ok: true,
+          message: `Nama akun berhasil diperbarui menjadi "${newName}"`,
+          ...pool.getStatus(true)
+        });
+      } catch (err) {
+        return res.status(404).json({ error: err.message });
+      }
+    }
+
+    // 5. Delete token
     if (parsed.pathname === '/api/admin/tokens' && req.method === 'DELETE') {
       const target = body?.id || body?.token;
       if (!target) {

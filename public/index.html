@@ -1576,7 +1576,7 @@ https://www.tiktok.com/@tokopedia/video/7346129847192839102</textarea>
       // 3. Render Technical Telemetry
       const grid = document.getElementById('modalGrid');
       const poolNodeText = item._poolMeta?.nodeId
-        ? `${escapeHtml(item._poolMeta.nodeId)} (${escapeHtml(item._poolMeta.maskedToken || '')})`
+        ? `${escapeHtml(item._poolMeta.nodeName ? item._poolMeta.nodeName + ' (' + item._poolMeta.nodeId + ')' : item._poolMeta.nodeId)} [${escapeHtml(item._poolMeta.maskedToken || '')}]`
         : 'Active Pool Node';
       const failoverBadge = (item._poolMeta?.totalFailovers > 0)
         ? `<span class="pill-badge pill-passive">Auto-Recovered (${item._poolMeta.totalFailovers} failover)</span>`

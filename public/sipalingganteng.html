@@ -97,7 +97,7 @@
     }
     .admin-grid {
       display: grid;
-      grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+      grid-template-columns: minmax(0, 1.05fr) minmax(0, 0.95fr);
       gap: var(--space-lg);
       margin-top: var(--space-lg);
     }
@@ -142,12 +142,27 @@
       display: flex;
       justify-content: space-between;
       align-items: center;
+      flex-wrap: wrap;
+      gap: var(--space-2xs);
     }
     .node-item-id {
       font-family: var(--font-outlier);
       font-weight: 700;
       font-size: var(--text-sm);
       color: var(--color-ink);
+    }
+    .node-account-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: var(--space-3xs);
+      font-family: var(--font-body);
+      font-size: var(--text-xs);
+      font-weight: 600;
+      color: var(--color-accent-deep);
+      background: var(--color-accent-wash);
+      border: var(--rule-hair) solid var(--color-accent-2);
+      border-radius: var(--radius-pill);
+      padding: 2px 10px;
     }
     .node-token-display {
       font-family: var(--font-outlier);
@@ -170,10 +185,12 @@
       display: flex;
       gap: var(--space-xs);
       margin-top: var(--space-xs);
+      align-items: center;
+      flex-wrap: wrap;
     }
     .token-textarea {
       width: 100%;
-      min-height: 140px;
+      min-height: 120px;
       padding: var(--space-sm);
       font-family: var(--font-outlier);
       font-size: var(--text-xs);
@@ -188,6 +205,54 @@
     .token-textarea:focus {
       outline: 2px solid var(--color-focus);
       border-color: transparent;
+    }
+    .form-group {
+      margin-bottom: var(--space-sm);
+    }
+    .form-label {
+      display: block;
+      font-size: var(--text-xs);
+      font-weight: 600;
+      color: var(--color-ink);
+      margin-bottom: var(--space-3xs);
+    }
+    .form-input {
+      width: 100%;
+      padding: var(--space-xs) var(--space-sm);
+      font-family: var(--font-body);
+      font-size: var(--text-sm);
+      border: var(--rule-hair) solid var(--color-rule-2);
+      border-radius: var(--radius-input);
+      background: var(--color-paper-2);
+      color: var(--color-ink);
+      box-sizing: border-box;
+    }
+    .form-input:focus {
+      outline: 2px solid var(--color-focus);
+      border-color: transparent;
+      background: var(--color-paper);
+    }
+    .tab-nav {
+      display: flex;
+      gap: var(--space-xs);
+      margin-bottom: var(--space-md);
+      border-bottom: var(--rule-hair) solid var(--color-rule);
+      padding-bottom: var(--space-xs);
+    }
+    .tab-btn {
+      background: none;
+      border: none;
+      font-family: var(--font-body);
+      font-size: var(--text-xs);
+      font-weight: 600;
+      color: var(--color-muted);
+      cursor: pointer;
+      padding: var(--space-2xs) var(--space-xs);
+      border-radius: var(--radius-input);
+    }
+    .tab-btn.active {
+      color: var(--color-accent-deep);
+      background: var(--color-accent-wash);
     }
   </style>
 </head>
@@ -291,21 +356,57 @@
               <span class="pill-badge pill-standard">Auto-Persist (.env)</span>
             </div>
 
-            <p style="font-size: var(--text-xs); color: var(--color-muted); margin-bottom: var(--space-sm);">
-              Tempel token Browserless yang baru Anda miliki. Anda bisa memasukkan 1 token atau banyak token sekaligus (pisahkan dengan koma atau baris baru).
-            </p>
+            <!-- Tabs: Single vs Bulk -->
+            <div class="tab-nav">
+              <button type="button" class="tab-btn active" id="tabSingleBtn">Input Tunggal + Nama Akun</button>
+              <button type="button" class="tab-btn" id="tabBulkBtn">Bulk Paste (Banyak Sekaligus)</button>
+            </div>
 
             <div class="portal-alert" id="addAlert"></div>
 
-            <textarea
-              id="newTokenInput"
-              class="token-textarea"
-              placeholder="Contoh:&#10;e9f47a61-1234-4567-89ab-cdef01234567&#10;a1b2c3d4-5678-90ab-cdef-1234567890ab"
-            ></textarea>
+            <!-- Form Single -->
+            <div id="singleModeForm">
+              <div class="form-group">
+                <label class="form-label" for="singleAccountName">Nama Akun / Pemilik Token</label>
+                <input
+                  type="text"
+                  id="singleAccountName"
+                  class="form-input"
+                  placeholder="Contoh: Akun Utama Gmail, Akun Tim Marketing, Akun Pro 1"
+                >
+              </div>
 
-            <div style="display: flex; gap: var(--space-xs); justify-content: flex-end;">
-              <button type="button" class="btn btn-sm" id="testDraftTokenBtn">Test Token Pertama</button>
-              <button type="button" class="btn btn-primary btn-sm" id="saveTokensBtn">Simpan ke Pool</button>
+              <div class="form-group">
+                <label class="form-label" for="singleTokenValue">Token API Browserless</label>
+                <input
+                  type="text"
+                  id="singleTokenValue"
+                  class="form-input"
+                  style="font-family: var(--font-outlier);"
+                  placeholder="Contoh: S5QJzvFSUPnaF7a33a2aac10588ca70dec3a75e70e"
+                >
+              </div>
+
+              <div style="display: flex; gap: var(--space-xs); justify-content: flex-end; margin-top: var(--space-sm);">
+                <button type="button" class="btn btn-sm" id="testSingleDraftBtn">Test Token Ini</button>
+                <button type="button" class="btn btn-primary btn-sm" id="saveSingleBtn">Simpan Akun ke Pool</button>
+              </div>
+            </div>
+
+            <!-- Form Bulk -->
+            <div id="bulkModeForm" style="display: none;">
+              <p style="font-size: var(--text-xs); color: var(--color-muted); margin-bottom: var(--space-xs);">
+                Format per baris: <code>Nama Akun | token_browserless</code> atau langsung <code>token_browserless</code>.
+              </p>
+              <textarea
+                id="newTokenInput"
+                class="token-textarea"
+                placeholder="Akun Utama | e9f47a61-1234-4567-89ab-cdef01234567&#10;Akun Kantor | a1b2c3d4-5678-90ab-cdef-1234567890ab&#10;tok_tanpa_nama_juga_bisa"
+              ></textarea>
+
+              <div style="display: flex; gap: var(--space-xs); justify-content: flex-end;">
+                <button type="button" class="btn btn-primary btn-sm" id="saveBulkBtn">Simpan Semua ke Pool</button>
+              </div>
             </div>
 
             <hr style="border: none; border-top: var(--rule-hair) solid var(--color-rule); margin: var(--space-lg) 0;">
@@ -320,8 +421,8 @@
               <input
                 type="text"
                 id="sandboxTokenInput"
-                class="portal-pass-input"
-                style="margin-bottom: 0; text-align: left; font-size: var(--text-xs);"
+                class="form-input"
+                style="margin-bottom: 0; font-family: var(--font-outlier); font-size: var(--text-xs);"
                 placeholder="Masukkan token Browserless untuk uji koneksi"
               >
               <button type="button" class="btn btn-sm" id="pingSandboxBtn">Ping</button>
@@ -332,7 +433,7 @@
           <!-- Right Column: Active Node Pool List -->
           <div class="admin-card">
             <div class="admin-card-header">
-              <h2 class="admin-card-title">Daftar Node Aktif</h2>
+              <h2 class="admin-card-title">Daftar Akun & Token Aktif</h2>
               <button type="button" class="btn btn-sm" id="refreshNodesBtn">Refresh</button>
             </div>
 
@@ -366,6 +467,26 @@
       if (!str) return '';
       return String(str).replace(/[&<>"']/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[m]);
     }
+
+    // Tab Switcher
+    const tabSingleBtn = document.getElementById('tabSingleBtn');
+    const tabBulkBtn = document.getElementById('tabBulkBtn');
+    const singleModeForm = document.getElementById('singleModeForm');
+    const bulkModeForm = document.getElementById('bulkModeForm');
+
+    tabSingleBtn.addEventListener('click', () => {
+      tabSingleBtn.classList.add('active');
+      tabBulkBtn.classList.remove('active');
+      singleModeForm.style.display = 'block';
+      bulkModeForm.style.display = 'none';
+    });
+
+    tabBulkBtn.addEventListener('click', () => {
+      tabBulkBtn.classList.add('active');
+      tabSingleBtn.classList.remove('active');
+      bulkModeForm.style.display = 'block';
+      singleModeForm.style.display = 'none';
+    });
 
     async function verifyAndLoad(code) {
       try {
@@ -432,11 +553,15 @@
         const isHealthy = node.status === 'HEALTHY';
         const badgeClass = isHealthy ? 'pill-viral' : 'pill-underperforming';
         const badgeText = isHealthy ? 'HEALTHY' : `COOLDOWN (${node.cooldownRemainingSec || 0}s)`;
+        const accountName = node.name || `Akun ${node.id.replace('node-', '')}`;
 
         return `
           <div class="node-item-card" id="card-${node.id}">
             <div class="node-item-header">
-              <span class="node-item-id">${escapeHtml(node.id)}</span>
+              <div style="display: flex; align-items: center; gap: var(--space-xs); flex-wrap: wrap;">
+                <span class="node-item-id">${escapeHtml(node.id)}</span>
+                <span class="node-account-badge" id="badge-name-${node.id}">${escapeHtml(accountName)}</span>
+              </div>
               <span class="pill-badge ${badgeClass}">${badgeText}</span>
             </div>
 
@@ -452,6 +577,7 @@
             </div>
 
             <div class="node-item-actions">
+              <button type="button" class="btn btn-sm" onclick="promptRenameNode('${node.id}', '${escapeHtml(accountName)}')">Ganti Nama</button>
               <button type="button" class="btn btn-sm" onclick="testNodeConnection('${node.id}', '${escapeHtml(node.token || '')}')">Test Node</button>
               <button type="button" class="btn btn-sm" style="color: var(--color-error);" onclick="deleteNode('${node.id}')">Hapus</button>
               <span id="status-${node.id}" style="font-size: var(--text-xs); color: var(--color-muted); align-self: center;"></span>
@@ -460,6 +586,32 @@
         `;
       }).join('');
     }
+
+    window.promptRenameNode = async function(nodeId, oldName) {
+      const newName = prompt(`Masukkan nama baru untuk ${nodeId}:`, oldName);
+      if (!newName || newName.trim() === oldName.trim()) return;
+
+      try {
+        const res = await fetch('/api/admin/tokens', {
+          method: 'PATCH',
+          headers: {
+            'Content-Type': 'application/json',
+            'x-admin-code': activeAdminCode
+          },
+          body: JSON.stringify({ id: nodeId, name: newName.trim() })
+        });
+        const data = await res.json();
+        if (data.ok) {
+          currentPoolData = data;
+          renderPoolMetrics(data);
+          renderNodesList(data.nodes || []);
+        } else {
+          alert(`Gagal mengubah nama: ${data.error}`);
+        }
+      } catch (e) {
+        alert(`Error: ${e.message}`);
+      }
+    };
 
     window.toggleTokenReveal = function(nodeId, fullToken) {
       const el = document.getElementById(`tok-text-${nodeId}`);
@@ -523,12 +675,89 @@
       }
     };
 
-    // Save tokens action
-    document.getElementById('saveTokensBtn').addEventListener('click', async () => {
+    // Save Single Token with Custom Name
+    document.getElementById('saveSingleBtn').addEventListener('click', async () => {
+      const name = document.getElementById('singleAccountName').value.trim();
+      const token = document.getElementById('singleTokenValue').value.trim();
+
+      if (!token) {
+        addAlert.className = 'portal-alert portal-alert-error';
+        addAlert.textContent = 'Silakan masukkan token Browserless.';
+        addAlert.style.display = 'block';
+        return;
+      }
+
+      addAlert.style.display = 'none';
+      try {
+        const res = await fetch('/api/admin/tokens', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'x-admin-code': activeAdminCode
+          },
+          body: JSON.stringify({ name: name || 'Akun Baru', token })
+        });
+
+        const data = await res.json();
+        if (!res.ok || !data.ok) throw new Error(data.error || 'Gagal menyimpan token');
+
+        addAlert.className = 'portal-alert portal-alert-success';
+        addAlert.textContent = `Akun "${name || 'Akun Baru'}" berhasil ditambahkan ke pool!`;
+        addAlert.style.display = 'block';
+
+        document.getElementById('singleAccountName').value = '';
+        document.getElementById('singleTokenValue').value = '';
+        currentPoolData = data;
+        renderPoolMetrics(data);
+        renderNodesList(data.nodes || []);
+      } catch (err) {
+        addAlert.className = 'portal-alert portal-alert-error';
+        addAlert.textContent = err.message;
+        addAlert.style.display = 'block';
+      }
+    });
+
+    // Test Single Draft Token
+    document.getElementById('testSingleDraftBtn').addEventListener('click', async () => {
+      const token = document.getElementById('singleTokenValue').value.trim();
+      if (!token) {
+        alert('Masukkan token Browserless terlebih dahulu.');
+        return;
+      }
+
+      addAlert.className = 'portal-alert';
+      addAlert.textContent = 'Menguji koneksi ke Browserless...';
+      addAlert.style.display = 'block';
+
+      try {
+        const res = await fetch('/api/admin/test-token', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'x-admin-code': activeAdminCode
+          },
+          body: JSON.stringify({ token })
+        });
+        const result = await res.json();
+        if (result.ok) {
+          addAlert.className = 'portal-alert portal-alert-success';
+          addAlert.textContent = `Token valid! Terkoneksi dalam ${result.latencyMs}ms.`;
+        } else {
+          addAlert.className = 'portal-alert portal-alert-error';
+          addAlert.textContent = `Token gagal dihubungi: ${result.error}`;
+        }
+      } catch (e) {
+        addAlert.className = 'portal-alert portal-alert-error';
+        addAlert.textContent = `Error: ${e.message}`;
+      }
+    });
+
+    // Save Bulk Tokens
+    document.getElementById('saveBulkBtn').addEventListener('click', async () => {
       const input = document.getElementById('newTokenInput').value.trim();
       if (!input) {
         addAlert.className = 'portal-alert portal-alert-error';
-        addAlert.textContent = 'Silakan masukkan minimal 1 token Browserless.';
+        addAlert.textContent = 'Silakan masukkan minimal 1 baris token.';
         addAlert.style.display = 'block';
         return;
       }
@@ -559,42 +788,6 @@
         addAlert.className = 'portal-alert portal-alert-error';
         addAlert.textContent = err.message;
         addAlert.style.display = 'block';
-      }
-    });
-
-    // Test first token draft
-    document.getElementById('testDraftTokenBtn').addEventListener('click', async () => {
-      const input = document.getElementById('newTokenInput').value.trim();
-      const first = input.split(/[\s,]+/)[0];
-      if (!first) {
-        alert('Masukkan token pada kotak teks terlebih dahulu.');
-        return;
-      }
-
-      addAlert.className = 'portal-alert';
-      addAlert.textContent = 'Menguji token ke Browserless...';
-      addAlert.style.display = 'block';
-
-      try {
-        const res = await fetch('/api/admin/test-token', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'x-admin-code': activeAdminCode
-          },
-          body: JSON.stringify({ token: first })
-        });
-        const result = await res.json();
-        if (result.ok) {
-          addAlert.className = 'portal-alert portal-alert-success';
-          addAlert.textContent = `Token valid! Berhasil terkoneksi dalam ${result.latencyMs}ms.`;
-        } else {
-          addAlert.className = 'portal-alert portal-alert-error';
-          addAlert.textContent = `Token gagal dihubungi: ${result.error}`;
-        }
-      } catch (e) {
-        addAlert.className = 'portal-alert portal-alert-error';
-        addAlert.textContent = `Error: ${e.message}`;
       }
     });
 
