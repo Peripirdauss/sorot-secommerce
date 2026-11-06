@@ -260,6 +260,25 @@ https://www.tiktok.com/@tokopedia/video/7346129847192839102</textarea>
             </div>
           </div>
 
+          <!-- Executive Batch Conclusion Card -->
+          <div id="batchConclusionCard" class="batch-conclusion-card" style="display: none;">
+            <div class="batch-conclusion-header">
+              <div style="display: flex; align-items: center; gap: var(--space-xs);">
+                <h3 class="batch-conclusion-title">Executive Creative Conclusion</h3>
+                <span class="pill-badge pill-viral" id="batchHealthBadge">Algorithmic Health: Calculating</span>
+              </div>
+              <span style="font-size: var(--text-xs); color: var(--color-muted); font-family: var(--font-mono);" id="batchSampleCount">0 Videos Analyzed</span>
+            </div>
+            <p class="batch-conclusion-text" id="batchConclusionText">-</p>
+            <div class="batch-needed-box">
+              <span class="pill-badge pill-standard" style="flex-shrink: 0;">Directive</span>
+              <div>
+                <strong style="font-weight: 600;">Primary Creative Need: </strong>
+                <span id="batchPrimaryNeedText">-</span>
+              </div>
+            </div>
+          </div>
+
           <!-- Toolstrip: Filtering and Sorting -->
           <div class="toolstrip">
             <div class="filter-group">
@@ -296,7 +315,7 @@ https://www.tiktok.com/@tokopedia/video/7346129847192839102</textarea>
                 <thead>
                   <tr>
                     <th style="width: 36px; text-align: center;">Pick</th>
-                    <th>Video ID</th>
+                    <th>Video Content & Cover</th>
                     <th>Hook Formula</th>
                     <th>Views</th>
                     <th>Likes</th>
@@ -332,6 +351,9 @@ https://www.tiktok.com/@tokopedia/video/7346129847192839102</textarea>
         <button type="button" class="btn btn-sm" id="closeModalBtn" aria-label="Close modal">Done</button>
       </div>
       <div class="modal-body">
+        <div id="modalDossierBox"></div>
+        <div id="modalConclusionBox"></div>
+        <h4 style="font-family: var(--font-display); font-size: var(--text-sm); font-weight: 700; margin-top: var(--space-md); margin-bottom: var(--space-xs); color: var(--color-ink);">Technical Telemetry & Account Metadata</h4>
         <div class="inspector-grid" id="modalGrid">
           <!-- Dynamically filled -->
         </div>
@@ -393,7 +415,13 @@ https://www.tiktok.com/@tokopedia/video/7346129847192839102</textarea>
         saves: "28450",
         followers: 125000,
         'like-account': 2840000,
-        isAD: false
+        isAD: false,
+        authorUniqueId: "techfinder",
+        authorNickname: "TechFinder Indonesia",
+        authorAvatar: "/brand/sorot-icon.png",
+        cover: "https://p16-common-sign.tiktokcdn-us.com/tos-alisg-p-0037/oYLIBiwPE01EUIC6IApFAuiJRdZHtAfN4wAduX~tplv-tiktokx-origin.image?dr=9636&x-expires=1794124800&x-signature=cdu5dlho%2F5GoBhVGk7GQYiRoClg%3D&t=4d5b0474&ps=13740610&shp=81f88b70&shcp=43f4a2f9&idc=useast5",
+        videoRatio: "720p",
+        videoUrl: "https://www.tiktok.com/@aerostreet/video/7345812901928374829"
       },
       {
         videoId: "7346129847192839102",
@@ -411,7 +439,13 @@ https://www.tiktok.com/@tokopedia/video/7346129847192839102</textarea>
         saves: "4100",
         followers: 430000,
         'like-account': 11400000,
-        isAD: false
+        isAD: false,
+        authorUniqueId: "officelife",
+        authorNickname: "Kantor Relatable",
+        authorAvatar: "/brand/sorot-icon.png",
+        cover: "https://p19-common-sign.tiktokcdn-us.com/tos-alisg-p-0037/o42Iwi4BIuPI1AtfpUZdzN6VRAnBCAiXu0YAtU~tplv-tiktokx-origin.image?dr=9636&x-expires=1794124800&x-signature=Txq2YTZ8bsVk32%2Bx0viFTcgjalQ%3D&t=4d5b0474&ps=13740610&shp=81f88b70&shcp=43f4a2f9&idc=useast5",
+        videoRatio: "1080p",
+        videoUrl: "https://www.tiktok.com/@tokopedia/video/7346129847192839102"
       },
       {
         videoId: "7346981249812938471",
@@ -429,25 +463,37 @@ https://www.tiktok.com/@tokopedia/video/7346129847192839102</textarea>
         saves: "31800",
         followers: 89000,
         'like-account': 1950000,
-        isAD: false
+        isAD: false,
+        authorUniqueId: "cozychef",
+        authorNickname: "Chef Masak Santai",
+        authorAvatar: "/brand/sorot-icon.png",
+        cover: "https://p19-common-sign.tiktokcdn-us.com/tos-alisg-p-0037/oUnGGIAeQRrFo8R0QFTUAwLjEpyebGetjaAyyf~tplv-tiktokx-origin.image?dr=9636&x-expires=1794124800&x-signature=Uvz9EMeqXYt5%2FulTmvcruvocmaA%3D&t=4d5b0474&ps=13740610&shp=81f88b70&shcp=43f4a2f9&idc=useast5",
+        videoRatio: "720p",
+        videoUrl: "https://www.tiktok.com/@cozychef/video/7346981249812938471"
       },
       {
-        videoId: "7347128938192847192",
-        title: "Special offer: Why our Vitamin C serum sells out every single week",
-        description: "Official brand spotlight! Try today with 20% off code GLOW20 #skincare #sponsored #ad",
+        videoId: "7703890519725739285",
+        title: "Official brand spotlight: Mineral Botanica Vitamin C Glow Serum",
+        description: "Official Account Mineral Botanica. Try today with discount voucher #skincare #mineralbotanica #sponsored #ad",
         createdTime: "2026-11-04 09:30:00",
-        duration: 32,
+        duration: 56,
         isCopyrighted: true,
         musicId: "9912837491",
-        sound: "Upbeat Corporate Electronic Pop",
-        views: "310000",
-        like: "8900",
-        comments: "310",
-        share: "420",
-        saves: "780",
-        followers: 210000,
-        'like-account': 890000,
-        isAD: true
+        sound: "Original Sound - Mineral Botanica",
+        views: "3900",
+        like: "21",
+        comments: "0",
+        share: "0",
+        saves: "0",
+        followers: 105800,
+        'like-account': 541600,
+        isAD: true,
+        authorUniqueId: "mineralbotanica",
+        authorNickname: "Mineral Botanica",
+        authorAvatar: "https://p16-common-sign.tiktokcdn-us.com/tos-alisg-avt-0068/a539ce73e44250319f5f606fd9c5abbf~tplv-tiktokx-cropcenter:720:720.jpeg?dr=9640&refresh_token=cea4da0e&x-expires=1794124800&x-signature=ORXnl0Y4RMILbfWPQx0TdqETYio%3D&t=4d5b0474&ps=13740610&shp=81f88b70&shcp=81f88b70&idc=useast8",
+        cover: "https://p16-common-sign.tiktokcdn-us.com/tos-alisg-p-0037/oYLIBiwPE01EUIC6IApFAuiJRdZHtAfN4wAduX~tplv-tiktokx-origin.image?dr=9636&x-expires=1794124800&x-signature=cdu5dlho%2F5GoBhVGk7GQYiRoClg%3D&t=4d5b0474&ps=13740610&shp=81f88b70&shcp=43f4a2f9&idc=useast5",
+        videoRatio: "540p",
+        videoUrl: "https://www.tiktok.com/@mineralbotanica/video/7703890519725739285"
       },
       {
         videoId: "7347891283918273641",
@@ -465,7 +511,13 @@ https://www.tiktok.com/@tokopedia/video/7346129847192839102</textarea>
         saves: "45",
         followers: 12000,
         'like-account': 95000,
-        isAD: false
+        isAD: false,
+        authorUniqueId: "sunsetvibes",
+        authorNickname: "Senja Aesthetic",
+        authorAvatar: "/brand/sorot-icon.png",
+        cover: "https://p16-common-sign.tiktokcdn-us.com/tos-alisg-p-0037/oYLIBiwPE01EUIC6IApFAuiJRdZHtAfN4wAduX~tplv-tiktokx-origin.image?dr=9636&x-expires=1794124800&x-signature=cdu5dlho%2F5GoBhVGk7GQYiRoClg%3D&t=4d5b0474&ps=13740610&shp=81f88b70&shcp=43f4a2f9&idc=useast5",
+        videoRatio: "720p",
+        videoUrl: "https://www.tiktok.com/@sunsetvibes/video/7347891283918273641"
       },
       {
         videoId: "7348019283746192837",
@@ -483,7 +535,13 @@ https://www.tiktok.com/@tokopedia/video/7346129847192839102</textarea>
         saves: "48200",
         followers: 320000,
         'like-account': 6100000,
-        isAD: false
+        isAD: false,
+        authorUniqueId: "karirtips",
+        authorNickname: "Strategi Karir",
+        authorAvatar: "/brand/sorot-icon.png",
+        cover: "https://p19-common-sign.tiktokcdn-us.com/tos-alisg-p-0037/o42Iwi4BIuPI1AtfpUZdzN6VRAnBCAiXu0YAtU~tplv-tiktokx-origin.image?dr=9636&x-expires=1794124800&x-signature=Txq2YTZ8bsVk32%2Bx0viFTcgjalQ%3D&t=4d5b0474&ps=13740610&shp=81f88b70&shcp=43f4a2f9&idc=useast5",
+        videoRatio: "1080p",
+        videoUrl: "https://www.tiktok.com/@karirtips/video/7348019283746192837"
       }
     ];
 
@@ -498,6 +556,24 @@ https://www.tiktok.com/@tokopedia/video/7346129847192839102</textarea>
     function formatPct(num) {
       if (isNaN(num)) return '0.00%';
       return num.toFixed(2) + '%';
+    }
+
+    function formatDuration(sec) {
+      const s = parseInt(sec, 10);
+      if (isNaN(s) || s <= 0) return '0:00';
+      const mins = Math.floor(s / 60);
+      const rem = s % 60;
+      return `${mins}:${rem < 10 ? '0' : ''}${rem}`;
+    }
+
+    function escapeHtml(str) {
+      if (!str) return '';
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
     }
 
     // Hook Formula Classifier (First 3-5 words analysis)
@@ -576,6 +652,138 @@ https://www.tiktok.com/@tokopedia/video/7346129847192839102</textarea>
         hookInfo,
         archetype, archetypeClass
       };
+    }
+
+    // Creative Conclusion and Needed Action Engine
+    function generateVideoConclusion(item, stats) {
+      const er = stats.er || 0;
+      const saveRate = stats.saveRate || 0;
+      const shareRate = stats.shareRate || 0;
+      const dur = item.duration || 0;
+      const isAd = Boolean(item.isAD);
+      const hookLabel = stats.hookInfo ? stats.hookInfo.label : 'General';
+
+      let verdict = '';
+      let neededShort = '';
+      let neededClass = 'pill-standard';
+      let hookNeeded = '';
+      let pacingNeeded = '';
+      let soundNeeded = '';
+      let ctaNeeded = '';
+
+      if (er >= 8.0) {
+        verdict = `Outlier Viral: Meraih ER ${er.toFixed(2)}% (${(er / 3.0).toFixed(1)}x di atas benchmark). Daya dorong algoritma FYP sangat tinggi berkat rasio interaksi yang kuat.`;
+        neededShort = 'Skalakan Format';
+        neededClass = 'pill-viral';
+      } else if (er >= 3.0) {
+        verdict = `Performa Sehat: Meraih ER ${er.toFixed(2)}%, berada dalam ambang batas optimal platform untuk pertumbuhan stabil.`;
+        neededShort = 'Aset Evergreen';
+        neededClass = 'pill-evergreen';
+      } else if (isAd) {
+        verdict = `Kelelahan Iklan (Ad Fatigue): Meraih ER ${er.toFixed(2)}%. Penyampaian pesan promosi terlalu dini memicu penonton langsung menggeser (scroll-away).`;
+        neededShort = 'Rombak Hook Iklan';
+        neededClass = 'pill-passive';
+      } else if (saveRate < 0.8 && shareRate < 0.5) {
+        verdict = `Konsumsi Pasif: Meraih ER ${er.toFixed(2)}%. Penonton menonton sekilas tanpa bookmark atau membagikan, memutus suntikan feed algoritma FYP.`;
+        neededShort = 'Tambahkan Hook Edukasi';
+        neededClass = 'pill-underperforming';
+      } else {
+        verdict = `Di Bawah Standar: Meraih ER ${er.toFixed(2)}% (standar minimum platform: >3.0%). Hook atau alur cerita belum mampu mengunci perhatian 3 detik pertama.`;
+        neededShort = 'Perbaiki Pacing & Hook';
+        neededClass = 'pill-underperforming';
+      }
+
+      // Hook Directive
+      if (hookLabel === 'Listicle / Number') {
+        hookNeeded = 'Pertahankan format listicle, tetapi tempatkan poin paling mengejutkan atau kontroversial langsung di detik 1-2.';
+      } else if (hookLabel === 'Warning / Negative') {
+        hookNeeded = 'Hook ketegangan sudah bagus. Pastikan solusi atau jawaban diberikan secara jelas sebelum detik ke-15.';
+      } else if (hookLabel === 'Question / Inquiry') {
+        hookNeeded = 'Hindari pertanyaan retoris biasa: gunakan pertanyaan tajam yang memancing perdebatan di kolom komentar.';
+      } else {
+        hookNeeded = 'Ganti kalimat pembuka pasif dengan rasa penasaran tinggi (contoh: "Jangan lakukan X sebelum lihat ini" atau "3 hal yang jarang diketahui tentang...").';
+      }
+
+      // Pacing Directive
+      if (dur > 45) {
+        pacingNeeded = `Durasi saat ini (${dur} detik) terlalu panjang dibanding sweet spot 18-25 detik. Pangkas intro dan langsung masuk ke demonstrasi utama agar completion rate meningkat 2x lipat.`;
+      } else if (dur < 18 && saveRate < 1.0) {
+        pacingNeeded = `Durasi ${dur} detik terlalu singkat untuk memuat manfaat yang layak disimpan. Perpanjang ke 20-25 detik dengan menyajikan 3 langkah konkret.`;
+      } else {
+        pacingNeeded = `Durasi (${dur} detik) berada dalam rentang ideal. Pertahankan pergantian visual (b-roll cut) setiap 2.5-3 detik untuk menjaga retensi.`;
+      }
+
+      // Audio Directive
+      if (item.sound && item.sound.toLowerCase().includes('original sound')) {
+        soundNeeded = 'Voiceover suara asli terdeteksi. Pastikan audio jernih dan teks subtitle selalu dibakar di area aman (center safe zone).';
+      } else if (item.isCopyrighted) {
+        soundNeeded = 'Musik library komersial terdeteksi. Uji coba dengan audio organik yang sedang tren untuk mendompleng gelombang algoritma.';
+      } else {
+        soundNeeded = 'Gunakan audio tren bertempo rendah atau lofi atmosferik di bawah voiceover agar tidak mendistraksi pesan.';
+      }
+
+      // CTA Directive
+      if (saveRate < 1.2) {
+        ctaNeeded = 'Laju simpan (Save Rate) sangat rendah. Tambahkan teks CTA eksplisit di detik 70%: "Simpan video ini biar tidak lupa saat belanja/praktek nanti."';
+      } else if (shareRate < 0.6) {
+        ctaNeeded = 'Tambahkan ajakan berbagi: "Kirim video ini ke teman yang butuh tips ini sekarang juga."';
+      } else {
+        ctaNeeded = 'Rasio interaksi sudah seimbang. Fokuskan akhir video pada pertanyaan interaktif untuk meramaikan kolom komentar.';
+      }
+
+      return { verdict, neededShort, neededClass, hookNeeded, pacingNeeded, soundNeeded, ctaNeeded };
+    }
+
+    // Batch Creative Conclusion Engine
+    function generateBatchConclusion(validItems) {
+      const card = document.getElementById('batchConclusionCard');
+      if (!card) return;
+
+      if (!validItems || validItems.length === 0) {
+        card.style.display = 'none';
+        return;
+      }
+
+      const totalViews = validItems.reduce((sum, d) => sum + (parseInt(d.views, 10) || 0), 0);
+      const avgViews = Math.round(totalViews / validItems.length);
+      const totalER = validItems.reduce((sum, d) => sum + computeMetrics(d).er, 0);
+      const avgER = totalER / validItems.length;
+      const adCount = validItems.filter(d => d.isAD).length;
+      const adPct = Math.round((adCount / validItems.length) * 100);
+      const avgSaveRate = validItems.reduce((sum, d) => sum + computeMetrics(d).saveRate, 0) / validItems.length;
+      const avgShareRate = validItems.reduce((sum, d) => sum + computeMetrics(d).shareRate, 0) / validItems.length;
+      const avgDur = Math.round(validItems.reduce((sum, d) => sum + (d.duration || 0), 0) / validItems.length);
+
+      const healthBadge = document.getElementById('batchHealthBadge');
+      const sampleCountEl = document.getElementById('batchSampleCount');
+      const textEl = document.getElementById('batchConclusionText');
+      const needEl = document.getElementById('batchPrimaryNeedText');
+
+      sampleCountEl.textContent = `${validItems.length} Video Dianalisis (Avg Views: ${formatCount(avgViews)})`;
+
+      if (adPct === 100) {
+        healthBadge.textContent = 'Kesehatan Algoritma: Dominan Iklan (Perlu Variasi)';
+        healthBadge.className = 'pill-badge pill-passive';
+        textEl.textContent = `Seluruh video dalam batch ini (${validItems.length} post) merupakan konten Sponsored Ad dengan rata-rata ER ${avgER.toFixed(2)}%. Tingginya muatan komersial menekan Save Rate ke ${avgSaveRate.toFixed(2)}% karena audiens merasa tidak ada utilitas praktis yang perlu dibookmark.`;
+        needEl.textContent = 'Buat 2-3 konten edukasi organik (tutorial atau pemecahan masalah) berdurasi 18-25 detik untuk memulihkan skor kepercayaan algoritma FYP sebelum menayangkan iklan berbayar berikutnya.';
+      } else if (adPct >= 50) {
+        healthBadge.textContent = 'Kesehatan Algoritma: Campuran Komersial';
+        healthBadge.className = 'pill-badge pill-standard';
+        textEl.textContent = `${adPct}% video disponsori. Rata-rata ER mencapai ${avgER.toFixed(2)}% dengan laju simpan ${avgSaveRate.toFixed(2)}% dan laju share ${avgShareRate.toFixed(2)}%. Keseimbangan antara promosi langsung dan edukasi masih dapat dioptimalkan.`;
+        needEl.textContent = 'Gunakan formula hook pertanyaan atau listicle di 3 detik awal pada video komersial agar penonton tidak langsung menggeser ke video lain.';
+      } else if (avgER >= 5.0) {
+        healthBadge.textContent = 'Kesehatan Algoritma: Unggul & Viral';
+        healthBadge.className = 'pill-badge pill-viral';
+        textEl.textContent = `Batch ini berkinerja sangat kuat dengan rata-rata ER ${avgER.toFixed(2)}% (jauh melampaui standar 3.0%). Sinergi antara hook yang menarik dan laju simpan ${avgSaveRate.toFixed(2)}% berhasil melipatgandakan distribusi FYP.`;
+        needEl.textContent = `Pertahankan formula hook pemenang saat ini dan replikasi pada variasi produk lainnya dengan tetap menjaga durasi manis di sekitar ${avgDur} detik.`;
+      } else {
+        healthBadge.textContent = 'Kesehatan Algoritma: Perlu Peningkatan';
+        healthBadge.className = 'pill-badge pill-underperforming';
+        textEl.textContent = `Rata-rata ER sebesar ${avgER.toFixed(2)}% masih di bawah standar platform (3.0%+). Penonton cenderung pasif tanpa melakukan bookmark (Save: ${avgSaveRate.toFixed(2)}%) atau membagikan (Share: ${avgShareRate.toFixed(2)}%).`;
+        needEl.textContent = 'Pangkas durasi video hingga 30% dan sematkan teks ajakan eksplisit ("Simpan video ini") sebelum detik ke-15 untuk memperpanjang usia konten.';
+      }
+
+      card.style.display = 'block';
     }
 
     function filterAndSortData() {
@@ -813,6 +1021,7 @@ https://www.tiktok.com/@tokopedia/video/7346129847192839102</textarea>
 
         analyzeHookIntelligence(valid);
         analyzeAudioLeverage(valid);
+        generateBatchConclusion(valid);
 
         if (valid[0].authorUniqueId) {
           const first = valid[0];
@@ -840,6 +1049,7 @@ https://www.tiktok.com/@tokopedia/video/7346129847192839102</textarea>
         document.getElementById('statusDescription').textContent = 'Ready to ingest links';
         analyzeHookIntelligence([]);
         analyzeAudioLeverage([]);
+        generateBatchConclusion([]);
       }
 
       const displayList = filterAndSortData();
@@ -868,21 +1078,38 @@ https://www.tiktok.com/@tokopedia/video/7346129847192839102</textarea>
           `;
         } else {
           const stats = computeMetrics(item);
+          const conclusion = generateVideoConclusion(item, stats);
           const isChecked = selectedForCompare.has(origIndex);
 
           // Calculate proportion for micro-bar
           const totalSaveShare = (stats.saves + stats.shares) || 1;
           const savePct = Math.round((stats.saves / totalSaveShare) * 100);
           const sharePct = 100 - savePct;
+          const coverUrl = item.cover || '/brand/sorot-icon.png';
 
           tr.innerHTML = `
             <td style="text-align: center;">
               <input type="checkbox" class="row-select" data-index="${origIndex}" ${isChecked ? 'checked' : ''} aria-label="Select video for comparison">
             </td>
             <td>
-              <div style="font-family: var(--font-mono); font-weight: 500;">${item.videoId || '—'}</div>
-              <div style="font-size: 0.725rem; color: var(--color-muted); max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
-                ${item.title || '(No caption)'}
+              <div class="video-cell-flex">
+                <div class="video-poster-box">
+                  <img src="${coverUrl}" alt="Video Cover" class="video-poster-img" loading="lazy" onerror="this.src='/brand/sorot-icon.png'">
+                  <span class="video-time-tag">${formatDuration(item.duration)}</span>
+                  ${item.isAD ? '<span class="video-ad-tag">AD</span>' : ''}
+                </div>
+                <div class="video-details-box">
+                  <div class="video-id-row">
+                    <span class="video-id-label">${escapeHtml(item.videoId || '—')}</span>
+                    ${item.authorUniqueId ? `<span class="video-author-handle">@${escapeHtml(item.authorUniqueId)}</span>` : ''}
+                  </div>
+                  <div class="video-caption-line" title="${escapeHtml(item.title || item.description || '')}">
+                    ${escapeHtml(item.title || item.description || '(No caption)')}
+                  </div>
+                  <div class="video-needed-hint">
+                    <span class="needed-pill ${conclusion.neededClass}">${conclusion.neededShort}</span>
+                  </div>
+                </div>
               </div>
             </td>
             <td>
@@ -955,6 +1182,18 @@ https://www.tiktok.com/@tokopedia/video/7346129847192839102</textarea>
 
       const statsA = computeMetrics(a);
       const statsB = computeMetrics(b);
+      const conclusionA = generateVideoConclusion(a, statsA);
+      const conclusionB = generateVideoConclusion(b, statsB);
+
+      const coverA = a.cover || '/brand/sorot-icon.png';
+      const coverB = b.cover || '/brand/sorot-icon.png';
+
+      const isAWin = statsA.er >= statsB.er;
+      const winner = isAWin ? a : b;
+      const loser = isAWin ? b : a;
+      const winnerStats = isAWin ? statsA : statsB;
+      const loserStats = isAWin ? statsB : statsA;
+      const loserConclusion = isAWin ? conclusionB : conclusionA;
 
       function deltaBadge(valA, valB, isPct = false, higherIsBetter = true) {
         const diff = valA - valB;
@@ -968,17 +1207,20 @@ https://www.tiktok.com/@tokopedia/video/7346129847192839102</textarea>
       const grid = document.getElementById('battleGrid');
       grid.innerHTML = `
         <div class="battle-card">
+          <div class="battle-cover-box">
+            <img src="${coverA}" alt="Video A Cover" class="battle-cover-img" loading="lazy" onerror="this.src='/brand/sorot-icon.png'">
+          </div>
           <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: var(--space-sm);">
             <div>
               <span class="pill-badge ${statsA.archetypeClass}">${statsA.archetype}</span>
               <span class="pill-badge ${statsA.hookInfo.pillClass}" style="margin-left: var(--space-2xs);">${statsA.hookInfo.label}</span>
-              <h4 style="font-family: var(--font-display); font-size: var(--text-md); margin-top: var(--space-2xs);">${a.videoId}</h4>
+              <h4 style="font-family: var(--font-display); font-size: var(--text-md); margin-top: var(--space-2xs);">${escapeHtml(a.videoId || '—')}</h4>
             </div>
             <span style="font-size: var(--text-xs); color: var(--color-muted);">${a.isAD ? 'Sponsored' : 'Organic'}</span>
           </div>
 
           <p style="font-size: var(--text-xs); color: var(--color-ink); margin-bottom: var(--space-md); line-height: 1.4;">
-            "${a.title || a.description || 'No caption'}"
+            "${escapeHtml(a.title || a.description || 'No caption')}"
           </p>
 
           <div class="battle-metric-row">
@@ -1003,22 +1245,25 @@ https://www.tiktok.com/@tokopedia/video/7346129847192839102</textarea>
           </div>
           <div class="battle-metric-row">
             <span>Sound</span>
-            <div style="max-width: 160px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${a.sound || '—'}</div>
+            <div style="max-width: 160px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${escapeHtml(a.sound || '—')}</div>
           </div>
         </div>
 
         <div class="battle-card">
+          <div class="battle-cover-box">
+            <img src="${coverB}" alt="Video B Cover" class="battle-cover-img" loading="lazy" onerror="this.src='/brand/sorot-icon.png'">
+          </div>
           <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: var(--space-sm);">
             <div>
               <span class="pill-badge ${statsB.archetypeClass}">${statsB.archetype}</span>
               <span class="pill-badge ${statsB.hookInfo.pillClass}" style="margin-left: var(--space-2xs);">${statsB.hookInfo.label}</span>
-              <h4 style="font-family: var(--font-display); font-size: var(--text-md); margin-top: var(--space-2xs);">${b.videoId}</h4>
+              <h4 style="font-family: var(--font-display); font-size: var(--text-md); margin-top: var(--space-2xs);">${escapeHtml(b.videoId || '—')}</h4>
             </div>
             <span style="font-size: var(--text-xs); color: var(--color-muted);">${b.isAD ? 'Sponsored' : 'Organic'}</span>
           </div>
 
           <p style="font-size: var(--text-xs); color: var(--color-ink); margin-bottom: var(--space-md); line-height: 1.4;">
-            "${b.title || b.description || 'No caption'}"
+            "${escapeHtml(b.title || b.description || 'No caption')}"
           </p>
 
           <div class="battle-metric-row">
@@ -1043,7 +1288,21 @@ https://www.tiktok.com/@tokopedia/video/7346129847192839102</textarea>
           </div>
           <div class="battle-metric-row">
             <span>Sound</span>
-            <div style="max-width: 160px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${b.sound || '—'}</div>
+            <div style="max-width: 160px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${escapeHtml(b.sound || '—')}</div>
+          </div>
+        </div>
+
+        <div class="battle-conclusion-box" style="grid-column: 1 / -1;">
+          <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: var(--space-2xs); flex-wrap: wrap; gap: var(--space-xs);">
+            <strong style="font-weight: 700; color: var(--color-ink);">Kesimpulan Head-to-Head & Direktif Iterasi:</strong>
+            <span class="pill-badge pill-viral">Pemenang: Video ${escapeHtml(winner.videoId)} (+${(winnerStats.er - loserStats.er).toFixed(2)}% ER)</span>
+          </div>
+          <p style="margin-bottom: var(--space-xs);">
+            Video ${escapeHtml(winner.videoId)} unggul dengan ER ${winnerStats.er.toFixed(2)}% didorong oleh formula hook <strong>${winnerStats.hookInfo.label}</strong> dan Save Rate <strong>${winnerStats.saveRate.toFixed(2)}%</strong> (vs ${loserStats.saveRate.toFixed(2)}%).
+          </p>
+          <div style="background: var(--color-paper); padding: var(--space-xs) var(--space-sm); border-radius: var(--radius-input); border: 1px solid var(--color-rule);">
+            <strong style="color: var(--color-muted); font-size: 0.6875rem; display: block; margin-bottom: 2px;">Yang Diperlukan Video ${escapeHtml(loser.videoId)} untuk Menang:</strong>
+            <span>${loserConclusion.hookNeeded} ${loserConclusion.pacingNeeded}</span>
           </div>
         </div>
       `;
@@ -1219,26 +1478,112 @@ https://www.tiktok.com/@tokopedia/video/7346129847192839102</textarea>
       if (!item || item.error) return;
 
       const stats = computeMetrics(item);
+      const conclusion = generateVideoConclusion(item, stats);
+      const coverUrl = item.cover || '/brand/sorot-icon.png';
+      const videoWatchUrl = item.videoUrl || (item.videoId ? `https://www.tiktok.com/@${item.authorUniqueId || 'video'}/video/${item.videoId}` : '#');
+
+      // 1. Render Visual Dossier Header
+      const dossierBox = document.getElementById('modalDossierBox');
+      dossierBox.innerHTML = `
+        <div class="modal-dossier">
+          <div class="dossier-cover-wrap">
+            <img src="${coverUrl}" alt="Video Cover" class="dossier-cover-img" loading="lazy" onerror="this.src='/brand/sorot-icon.png'">
+            <span class="dossier-duration-badge">${formatDuration(item.duration)}</span>
+          </div>
+          <div class="dossier-meta-wrap">
+            <div>
+              <div class="dossier-badges-row">
+                <span class="pill-badge ${stats.archetypeClass}">${stats.archetype}</span>
+                <span class="pill-badge ${stats.hookInfo.pillClass}">${stats.hookInfo.label}</span>
+                ${item.isAD ? '<span class="pill-badge pill-passive">Sponsored (Ad)</span>' : '<span class="pill-badge pill-evergreen">Organic Post</span>'}
+                ${item.videoRatio ? `<span class="pill-badge pill-standard">${item.videoRatio}</span>` : ''}
+              </div>
+              <h4 class="dossier-title" style="margin-top: var(--space-xs);">${escapeHtml(item.title || '(No caption provided)')}</h4>
+              <p style="font-size: var(--text-xs); color: var(--color-muted); margin-top: var(--space-3xs);">
+                Creator: <strong>${escapeHtml(item.authorNickname || item.authorUniqueId || 'TikTok Creator')}</strong> (@${escapeHtml(item.authorUniqueId || '—')})
+              </p>
+            </div>
+
+            <div>
+              <div class="dossier-kpi-grid">
+                <div class="dossier-kpi-cell">
+                  <span class="dossier-kpi-label">Views</span>
+                  <span class="dossier-kpi-val">${formatCount(stats.views)}</span>
+                </div>
+                <div class="dossier-kpi-cell">
+                  <span class="dossier-kpi-label">ER%</span>
+                  <span class="dossier-kpi-val">${formatPct(stats.er)}</span>
+                </div>
+                <div class="dossier-kpi-cell">
+                  <span class="dossier-kpi-label">Save Rate</span>
+                  <span class="dossier-kpi-val">${formatPct(stats.saveRate)}</span>
+                </div>
+                <div class="dossier-kpi-cell">
+                  <span class="dossier-kpi-label">Share Rate</span>
+                  <span class="dossier-kpi-val">${formatPct(stats.shareRate)}</span>
+                </div>
+              </div>
+
+              ${videoWatchUrl !== '#' ? `
+                <div style="margin-top: var(--space-xs);">
+                  <a href="${videoWatchUrl}" target="_blank" rel="noopener noreferrer" class="btn btn-sm" style="display: inline-flex; align-items: center; gap: var(--space-2xs);">
+                    Buka Video di TikTok ↗
+                  </a>
+                </div>
+              ` : ''}
+            </div>
+          </div>
+        </div>
+      `;
+
+      // 2. Render Executive Conclusion & Needed Actions Box
+      const conclusionBox = document.getElementById('modalConclusionBox');
+      conclusionBox.innerHTML = `
+        <div class="conclusion-box">
+          <div class="conclusion-top-row">
+            <h4 class="conclusion-box-title">Kesimpulan Audit Kreatif & Algoritma</h4>
+            <span class="needed-pill ${conclusion.neededClass}">${conclusion.neededShort}</span>
+          </div>
+          <p class="conclusion-verdict-p">${conclusion.verdict}</p>
+          
+          <h5 style="font-size: 0.6875rem; color: var(--color-muted); font-weight: 600; margin-bottom: var(--space-xs);">Rekomendasi yang Perlu Diterapkan:</h5>
+          <div class="needed-actions-grid">
+            <div class="needed-action-card">
+              <span class="needed-action-header">Formulasi Hook yang Diperlukan</span>
+              <p class="needed-action-desc">${conclusion.hookNeeded}</p>
+            </div>
+            <div class="needed-action-card">
+              <span class="needed-action-header">Pacing & Durasi yang Diperlukan</span>
+              <p class="needed-action-desc">${conclusion.pacingNeeded}</p>
+            </div>
+            <div class="needed-action-card">
+              <span class="needed-action-header">Pemanfaatan Suara & Audio</span>
+              <p class="needed-action-desc">${conclusion.soundNeeded}</p>
+            </div>
+            <div class="needed-action-card">
+              <span class="needed-action-header">Ajakan Interaksi (CTA)</span>
+              <p class="needed-action-desc">${conclusion.ctaNeeded}</p>
+            </div>
+          </div>
+        </div>
+      `;
+
+      // 3. Render Technical Telemetry
       const grid = document.getElementById('modalGrid');
       grid.innerHTML = `
-        <div class="inspector-item"><span class="inspector-key">Video ID</span><span class="inspector-val">${item.videoId || '—'}</span></div>
+        <div class="inspector-item"><span class="inspector-key">Video ID</span><span class="inspector-val">${escapeHtml(item.videoId || '—')}</span></div>
         <div class="inspector-item"><span class="inspector-key">Intent Archetype</span><span class="inspector-val"><span class="pill-badge ${stats.archetypeClass}">${stats.archetype}</span></span></div>
         <div class="inspector-item"><span class="inspector-key">Hook Formula</span><span class="inspector-val"><span class="pill-badge ${stats.hookInfo.pillClass}">${stats.hookInfo.label}</span></span></div>
-        <div class="inspector-item"><span class="inspector-key">Created Date</span><span class="inspector-val">${item.createdTime || '—'}</span></div>
+        <div class="inspector-item"><span class="inspector-key">Created Date</span><span class="inspector-val">${escapeHtml(item.createdTime || '—')}</span></div>
         <div class="inspector-item"><span class="inspector-key">Duration</span><span class="inspector-val">${item.duration ? item.duration + 's' : '—'}</span></div>
         <div class="inspector-item"><span class="inspector-key">Is Sponsored (Ad)</span><span class="inspector-val">${item.isAD ? 'Yes' : 'No'}</span></div>
-        <div class="inspector-item"><span class="inspector-key">Sound Title</span><span class="inspector-val">${item.sound || '—'}</span></div>
-        <div class="inspector-item"><span class="inspector-key">Music ID</span><span class="inspector-val">${item.musicId || '—'}</span></div>
-        <div class="inspector-item"><span class="inspector-key">Views</span><span class="inspector-val">${item.views || 0}</span></div>
-        <div class="inspector-item"><span class="inspector-key">Engagement Rate (ER%)</span><span class="inspector-val">${formatPct(stats.er)}</span></div>
-        <div class="inspector-item"><span class="inspector-key">Likes / Saves / Shares</span><span class="inspector-val">${item.like || 0} / ${item.saves || 0} / ${item.share || 0}</span></div>
-        <div class="inspector-item"><span class="inspector-key">Comments</span><span class="inspector-val">${item.comments || 0}</span></div>
-        <div class="inspector-item"><span class="inspector-key">Save Rate (S/V)</span><span class="inspector-val">${formatPct(stats.saveRate)}</span></div>
-        <div class="inspector-item"><span class="inspector-key">Share Rate (Sh/V)</span><span class="inspector-val">${formatPct(stats.shareRate)}</span></div>
-        <div class="inspector-item"><span class="inspector-key">Author Followers</span><span class="inspector-val">${item.followers || 0}</span></div>
-        <div class="inspector-item"><span class="inspector-key">Author Heart Count</span><span class="inspector-val">${item['like-account'] || 0}</span></div>
-        <div class="inspector-item" style="grid-column: 1 / -1;"><span class="inspector-key">Title</span><span class="inspector-val">${item.title || '—'}</span></div>
-        <div class="inspector-item" style="grid-column: 1 / -1;"><span class="inspector-key">Description</span><span class="inspector-val">${item.description || '—'}</span></div>
+        <div class="inspector-item"><span class="inspector-key">Sound Title</span><span class="inspector-val">${escapeHtml(item.sound || '—')}</span></div>
+        <div class="inspector-item"><span class="inspector-key">Music ID</span><span class="inspector-val">${escapeHtml(item.musicId || '—')}</span></div>
+        <div class="inspector-item"><span class="inspector-key">Likes / Saves / Shares</span><span class="inspector-val">${formatCount(item.like)} / ${formatCount(item.saves)} / ${formatCount(item.share)}</span></div>
+        <div class="inspector-item"><span class="inspector-key">Comments</span><span class="inspector-val">${formatCount(item.comments)}</span></div>
+        <div class="inspector-item"><span class="inspector-key">Author Followers</span><span class="inspector-val">${formatCount(item.followers)}</span></div>
+        <div class="inspector-item"><span class="inspector-key">Author Total Likes</span><span class="inspector-val">${formatCount(item['like-account'])}</span></div>
+        <div class="inspector-item" style="grid-column: 1 / -1;"><span class="inspector-key">Caption Description</span><span class="inspector-val">${escapeHtml(item.description || item.title || '—')}</span></div>
       `;
 
       document.getElementById('detailModal').style.display = 'grid';

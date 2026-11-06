@@ -110,7 +110,14 @@ async function getTikTokData(url) {
           authorNickname: author.nickname || '',
           authorAvatar: author.avatarLarger || author.avatarMedium || author.avatarThumb || '',
           authorSignature: author.signature || '',
-          authorVerified: Boolean(author.verified)
+          authorVerified: Boolean(author.verified),
+          cover: itemStruct.video?.cover || itemStruct.video?.originCover || '',
+          dynamicCover: itemStruct.video?.dynamicCover || '',
+          originCover: itemStruct.video?.originCover || '',
+          videoRatio: itemStruct.video?.ratio || '',
+          videoWidth: itemStruct.video?.width || 0,
+          videoHeight: itemStruct.video?.height || 0,
+          videoUrl: `https://www.tiktok.com/@${author.uniqueId || 'video'}/video/${itemStruct.id || ''}`
         };
       } catch (e) {
         return { error: "Failed to parse video item: " + e.message };
